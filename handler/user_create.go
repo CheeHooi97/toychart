@@ -1,0 +1,40 @@
+package handler
+
+import (
+	"net/http"
+	"toychart/errcode"
+	"toychart/model"
+	"toychart/utils"
+
+	"github.com/labstack/echo/v4"
+)
+
+func (h *Handler) CreateUser(c echo.Context) error {
+	if err := c.Request().ParseMultipartForm(32 << 20); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid multipart form")
+	}
+
+	companyId := c.FormValue("companyId")
+	username := c.FormValue("username")
+	email := c.FormValue("email")
+
+	if companyId == "" || username == "" {
+		return responseError(c, errcode.CompanyIdAndUserNameFieldRequired)
+	}
+
+	//
+
+	newUser := new(model.User)
+	newUser.Id = utils.UniqueID()
+	newUser.CompanyId = companyId
+	newUser.Username = username
+	newUser.Email = email
+	newUser.Status = true
+	newUser.DateTime()
+
+	if err := h.User.Create(newUser); err != nil {
+		return responseError(c, errcode.InternalServerError)
+	}
+
+	return responseJSON(c, newUser)
+}
