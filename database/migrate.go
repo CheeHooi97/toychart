@@ -19,11 +19,13 @@ func Migrate(db *gorm.DB) error {
 	// List of models
 	models := []any{
 		&model.Set{},
+		&model.Token{},
 		&model.ToyPrice{},
 		&model.Toy{},
+		&model.User{},
+		&model.UserDevice{},
 		&model.UserToySearchLog{},
 		&model.UserToy{},
-		&model.User{},
 	}
 
 	// Run AutoMigrate

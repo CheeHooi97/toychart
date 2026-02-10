@@ -9,19 +9,23 @@ import (
 )
 
 type Handler struct {
-	Toy      *service.ToyService
-	ToyPrice *service.ToyPriceService
-	Set      *service.SetService
-	User     *service.UserService
+	Token      *service.TokenService
+	Toy        *service.ToyService
+	ToyPrice   *service.ToyPriceService
+	Set        *service.SetService
+	User       *service.UserService
+	UserDevice *service.UserDeviceService
 }
 
 func NewHandler(services *service.Services) *Handler {
 	h := &Handler{
 
-		Toy:      services.ToyService,
-		ToyPrice: services.ToyPriceService,
-		Set:      services.SetService,
-		User:     services.UserService,
+		Token:      services.TokenService,
+		Toy:        services.ToyService,
+		ToyPrice:   services.ToyPriceService,
+		Set:        services.SetService,
+		User:       services.UserService,
+		UserDevice: services.UserDeviceService,
 	}
 
 	return h
