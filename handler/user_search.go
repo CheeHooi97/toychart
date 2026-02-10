@@ -8,8 +8,7 @@ import (
 
 func (h *Handler) SearchUser(c echo.Context) error {
 	var i struct {
-		Username  string `json:"username" validate:"required"`
-		SupportId string `json:"supportId" validate:"required"`
+		Username string `json:"username" validate:"required"`
 	}
 
 	if msg, err := utils.ValidateRequest(c, &i); err != nil {

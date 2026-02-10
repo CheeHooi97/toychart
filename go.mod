@@ -6,8 +6,10 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/chromedp/chromedp v0.14.2
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.13.3
+	github.com/mileusna/useragent v1.3.5
 	golang.org/x/text v0.31.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.26.1

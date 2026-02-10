@@ -21,6 +21,10 @@ func (s *UserService) GetById(id string) (*model.User, error) {
 	return s.userRepo.GetById(id)
 }
 
+func (s *UserService) GetByUsername(username string) (bool, error) {
+	return s.userRepo.GetByUsername(username)
+}
+
 func (s *UserService) GetByEmail(email string) (*model.User, error) {
 	return s.userRepo.GetByEmail(email)
 }

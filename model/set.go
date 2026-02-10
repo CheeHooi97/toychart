@@ -7,7 +7,8 @@ import (
 
 type Set struct {
 	Id       string `gorm:"type:varchar(36);primaryKey" json:"id"`
-	Name     string `gorm:"type:varchar(255)" json:"name"`
+	SetName  string `gorm:"type:varchar(255)" json:"setName"`
+	Series   string `gorm:"type:varchar(255)" json:"series"`
 	PhotoUrl string `gorm:"type:text" json:"photoUrl"`
 	BaseModel
 }

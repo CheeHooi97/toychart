@@ -1,23 +1,29 @@
 package handler
 
 import (
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"path/filepath"
+	"toychart/config"
 	"toychart/errcode"
-	"toychart/utils"
+	"toychart/kit/oss"
 
 	"github.com/labstack/echo/v4"
 )
 
 func (h *Handler) UpdateUser(c echo.Context) error {
-	id := c.Param("id")
-
-	var i struct {
-		CompanyId string `json:"companyId"`
-		Username  string `json:"username"`
-		FcmToken  string `json:"fcmToken"`
+	if err := c.Request().ParseMultipartForm(32 << 20); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid multipart form")
 	}
 
-	if msg, err := utils.ValidateRequest(c, &i); err != nil {
-		return responseValidationError(c, msg)
+	id := c.Param("id")
+	username := c.FormValue("username")
+
+	file, fileHeader, err := c.Request().FormFile("photo")
+	if err != nil && err != http.ErrMissingFile {
+		log.Printf("FormFile error: %v", err)
 	}
 
 	user, err := h.User.GetById(id)
@@ -27,16 +33,46 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 		return responseError(c, errcode.FailedGetUser)
 	}
 
-	if i.CompanyId != "" {
-		user.CompanyId = i.CompanyId
+	if username != "" {
+		check, err := h.User.GetByUsername(username)
+		if err != nil {
+			return responseError(c, errcode.InternalServerError)
+		}
+
+		if !check {
+			user.Username = username
+		}
 	}
 
-	if i.Username != "" {
-		user.Username = i.Username
-	}
+	if file == nil {
+		return responseError(c, errcode.FileError)
+	} else {
+		defer file.Close()
+		var fileName string
 
-	if i.FcmToken != "" {
-		user.FcmToken = i.FcmToken
+		fmt.Println("fileHeader.Filename: ", fileHeader.Filename)
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			return responseError(c, errcode.InternalServerError)
+		}
+
+		defer file.Close()
+
+		fileByte, err := io.ReadAll(file)
+		if err != nil {
+			return responseError(c, errcode.InternalServerError)
+		}
+
+		ext := filepath.Ext(fileHeader.Filename)
+
+		fileName = "user_profile_" + user.Id + ext
+
+		if err := oss.Upload(config.OSSBucket, fileName, fileByte); err != nil {
+			return responseError(c, errcode.InternalServerError)
+		}
+
+		user.PhotoURL = fileName
 	}
 
 	user.UpdateDt()
@@ -44,5 +80,5 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 		return responseError(c, errcode.InternalServerError)
 	}
 
-	return responseNoContent(c)
+	return responseJSON(c, true)
 }
