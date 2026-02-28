@@ -1,0 +1,22 @@
+meta {
+  name: Scrape Sold
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/ebay/search/sold/scrape
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{authToken}}
+}
+
+body {
+  {
+    "url": "https://www.ebay.com/sch/i.html?_nkw=labubu&LH_Complete=1&LH_Sold=1",
+    "maxPages": 2
+  }
+}

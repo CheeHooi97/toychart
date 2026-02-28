@@ -78,6 +78,8 @@ func SetupRoutes(h *handler.Handler, db *gorm.DB) *echo.Echo {
 
 	ebay := v.Group("/ebay")
 	ebay.POST("/create", h.EbayCreate)
+	ebay.POST("/search/sold", h.EbaySoldSearch)
+	ebay.POST("/search/sold/scrape", h.EbaySoldScrape)
 
 	return e
 }

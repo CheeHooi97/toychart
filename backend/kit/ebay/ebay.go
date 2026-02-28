@@ -3,6 +3,7 @@ package ebay
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -10,11 +11,23 @@ import (
 )
 
 type CardData struct {
-	ItemID string
-	Title  string
-	Price  string
-	Image  string
-	Link   string
+	ItemID     string `json:"itemId"`
+	Title      string `json:"title"`
+	Price      string `json:"price"`
+	ImageURL   string `json:"imageUrl"`
+	ItemWebURL string `json:"itemWebUrl"`
+	Subtitle   string `json:"subtitle"`
+	Caption    string `json:"caption"`
+}
+
+type SoldItem struct {
+	ItemID      string `json:"itemId"`
+	Title       string `json:"title"`
+	Price       string `json:"price"`
+	Currency    string `json:"currency"`
+	ImageURL    string `json:"imageUrl"`
+	ItemWebURL  string `json:"itemWebUrl"`
+	ItemEndDate string `json:"itemEndDate"`
 }
 
 func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
@@ -65,6 +78,8 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 					const titleEl = row.querySelector('.s-card__title');
 					const priceEl = row.querySelector('.s-card__price');
 					const imgEl   = row.querySelector('.s-card__image img');
+					const subtitleEl = row.querySelector('.s-card__subtitle');
+					const captionEl = row.querySelector('.s-card__caption');
 
 					let link = linkEl ? linkEl.href : "";
 					let itemId = "";
@@ -78,8 +93,10 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 						itemId: itemId,
 						title: titleEl ? titleEl.innerText.trim() : "",
 						price: priceEl ? priceEl.innerText.trim() : "N/A",
-						image: imgEl ? imgEl.src : "",
-						link: link
+						imageUrl: imgEl ? imgEl.src : "",
+						itemWebUrl: link,
+						subtitle: subtitleEl ? subtitleEl.innerText.trim() : "",
+						caption: captionEl ? captionEl.innerText.trim() : ""
 					};
 				});
 			})()
@@ -127,3 +144,53 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 }
 
 // https://www.ebay.com/sch/i.html?_nkw=Labubu&LH_Complete=1&LH_Sold=1
+
+func BuildSoldSearchURL(keyword string) string {
+	params := url.Values{}
+	params.Set("_nkw", keyword)
+	params.Set("LH_Complete", "1")
+	params.Set("LH_Sold", "1")
+	return "https://www.ebay.com/sch/i.html?" + params.Encode()
+}
+
+func ScrapeSoldToyPrices(keyword, pageURL string, maxPages int) ([]CardData, error) {
+	targetURL := pageURL
+	if targetURL == "" {
+		targetURL = BuildSoldSearchURL(keyword)
+	}
+
+	if maxPages <= 0 {
+		maxPages = 1
+	}
+	if maxPages > 10 {
+		maxPages = 10
+	}
+
+	return ScrapEbaySoldCards(targetURL, maxPages)
+}
+
+func SearchSoldToyPrices(keyword string) ([]SoldItem, error) {
+	result, err := SearchToyPrices(keyword)
+	if err != nil {
+		return nil, err
+	}
+
+	soldItems := make([]SoldItem, 0, len(result.ItemSummaries))
+	for _, item := range result.ItemSummaries {
+		if item.ItemEndDate == "" {
+			continue
+		}
+
+		soldItems = append(soldItems, SoldItem{
+			ItemID:      item.ItemID,
+			Title:       item.Title,
+			Price:       item.Price.Value,
+			Currency:    item.Price.Currency,
+			ImageURL:    item.Image.ImageUrl,
+			ItemWebURL:  item.ItemWebUrl,
+			ItemEndDate: item.ItemEndDate,
+		})
+	}
+
+	return soldItems, nil
+}

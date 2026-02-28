@@ -62,3 +62,5 @@ Included requests:
 - `DELETE /v1/user/delete/:id`
 - `POST /v1/toy/search`
 - `POST /v1/ebay/create`
+- `POST /v1/ebay/search/sold`
+- `POST /v1/ebay/search/sold/scrape`
