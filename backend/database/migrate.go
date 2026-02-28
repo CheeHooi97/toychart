@@ -10,6 +10,11 @@ import (
 
 // Migrate runs all migrations into the "toychart" schema
 func Migrate(db *gorm.DB) error {
+	if err := db.Exec(`CREATE SCHEMA IF NOT EXISTS toychart`).Error; err != nil {
+		log.Println("Schema creation error:", err)
+		return err
+	}
+
 	// Set schema globally using NamingStrategy
 	db.Config.NamingStrategy = schema.NamingStrategy{
 		TablePrefix:   "toychart.", // schema_name.

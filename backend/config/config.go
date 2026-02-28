@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -36,7 +37,7 @@ var (
 
 // LoadConfig
 func LoadConfig() {
-	_ = godotenv.Load()
+	loadEnvFile()
 
 	Env = GetEnv("ENV")
 	DBHost = GetEnv("POSTGRES_HOST")
@@ -57,6 +58,22 @@ func LoadConfig() {
 	err := loadRSAKeys(AuthPrivateKeyPath, AuthPublicKeyPath)
 	if err != nil {
 		log.Fatalf("Failed to load RSA keys: %v", err)
+	}
+}
+
+func loadEnvFile() {
+	candidates := []string{
+		".env",
+		filepath.Join("backend", ".env"),
+	}
+
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			if err := godotenv.Load(path); err != nil {
+				log.Fatalf("Failed to load env file %s: %v", path, err)
+			}
+			return
+		}
 	}
 }
 
