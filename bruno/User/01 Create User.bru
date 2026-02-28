@@ -1,0 +1,35 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/user
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body {
+  {
+    "username": "bruno-user",
+    "email": "bruno@example.com",
+    "platform": "WEB",
+    "deviceId": "bruno-device-001",
+    "deviceInfo": {
+      "platform": "web",
+      "appVersion": "local"
+    },
+    "pnsToken": "local-pns-token"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.result) {
+    bru.setVar("userId", res.body.result.user.id);
+    bru.setVar("authToken", res.body.result.token);
+  }
+}

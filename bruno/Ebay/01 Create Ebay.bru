@@ -1,0 +1,19 @@
+meta {
+  name: Create Ebay
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/ebay/create
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  Authorization: Bearer {{authToken}}
+}
+
+body {
+  {}
+}
