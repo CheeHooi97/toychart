@@ -13,15 +13,15 @@ import (
 func (h *Handler) SearchToy(c echo.Context) error {
 	var i struct {
 		Keyword string `json:"keyword"`
-		Set     string `json:"set"`
-		Order   string `json:"order"`
+		// Set     string `json:"set"`
+		// Order   string `json:"order"`
 	}
 
 	if msg, err := utils.ValidateRequest(c, &i); err != nil {
 		return responseValidationError(c, msg)
 	}
 
-	result, err := ebay.SearchToyPrices("Charizard")
+	result, err := ebay.SearchToyPrices(i.Keyword)
 	if err != nil {
 		return responseError(c, errcode.InternalServerError)
 	}
@@ -38,16 +38,10 @@ func (h *Handler) SearchToy(c echo.Context) error {
 
 	for _, item := range result.ItemSummaries {
 		// Must be auction
-		isAuction := false
-		for _, opt := range item.BuyingOptions {
-			if opt == "AUCTION" {
-				isAuction = true
-				break
-			}
-		}
-		if !isAuction {
-			continue
-		}
+		// isAuction := slices.Contains(item.BuyingOptions, "AUCTION")
+		// if !isAuction {
+		// 	continue
+		// }
 
 		// Must have ended
 		if item.ItemEndDate == "" {
@@ -76,6 +70,8 @@ func (h *Handler) SearchToy(c echo.Context) error {
 	}
 
 	fmt.Println("New Length: ", len(soldItems))
+
+	// result, _ := ebay.SearchSoldToyPrices("Labubu", 1)
 
 	return responseJSON(c, result)
 }
