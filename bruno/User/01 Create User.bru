@@ -29,7 +29,7 @@ body {
 
 script:post-response {
   if (res.body && res.body.result) {
-    bru.setVar("userId", res.body.result.user.id);
+    bru.setVar("userId", res.body.result.id);
     bru.setVar("authToken", res.body.result.token);
   }
 }
