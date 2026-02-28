@@ -18,8 +18,21 @@ Core user value:
 
 Focus on a narrow, reliable first version:
 
-- Brands: Pop Mart, Funko
+- Initial catalog coverage:
+  - LEGO collectibles
+  - Funko
+  - Hasbro
+  - Mattel
+  - Bandai
+  - Hot Toys
+  - NECA
+  - Pop Mart
+  - Miniso collaboration collectibles
 - Marketplace data source: eBay sold listings
+- Catalog / retail reference sources to support later:
+  - Miniso
+  - Top Pop Culture & Toy Collectibles
+  - Ozzie Collectables
 - Core pages:
   - Series/collection directory
   - Item detail page
@@ -64,6 +77,46 @@ This matters because "Labubu", "Skullpanda", and "Funko Pop Marvel" are not the 
 - `collection`: Exciting Macaron, The Monsters Have a Seat, Wave 23
 - `collectible`: one figure within a collection
 - `variant`: regular, chase, secret, glow, flocked, metallic
+
+It also matters because your data inputs are not the same kind of entity:
+
+- `brand`: LEGO, Funko, Hasbro, Mattel, Bandai, Hot Toys, NECA, Pop Mart
+- `retailer/source`: Miniso, Top Pop Culture & Toy Collectibles, Ozzie Collectables, eBay
+
+The schema should not mix those together. Brands define the catalog. Sources define where data comes from.
+
+## Initial Coverage Strategy
+
+Use three buckets so expansion stays clean:
+
+### 1. Core collectible brands
+
+Seed these as brands:
+
+- LEGO
+- Funko
+- Hasbro
+- Mattel
+- Bandai
+- Hot Toys
+- NECA
+- Pop Mart
+
+### 2. Retail / collaboration catalogs
+
+Treat these as external sources first, with optional brand linkage later:
+
+- Miniso
+- Top Pop Culture & Toy Collectibles
+- Ozzie Collectables
+
+### 3. Resale marketplaces
+
+Use these for market pricing:
+
+- eBay first
+- Mercari later
+- Whatnot later if you want live collectible market coverage
 
 ## What Exists Today
 
@@ -134,6 +187,7 @@ Top-level maker or platform.
 | id | uuid / varchar(36) | primary key |
 | slug | varchar(100) | unique |
 | name | varchar(255) | `Pop Mart`, `Funko` |
+| brand_type | varchar(50) | `manufacturer`, `designer_toy`, `retailer_house_brand`, `licensor` |
 | country_code | varchar(8) | optional |
 | official_url | text | optional |
 | created_at | timestamptz | |
@@ -173,7 +227,7 @@ A release set, wave, blind box series, or product drop.
 | franchise_id | fk -> franchise.id | nullable for generic lines |
 | slug | varchar(150) | unique per brand |
 | name | varchar(255) | `Exciting Macaron` |
-| collection_type | varchar(50) | `blind_box`, `wave`, `single_release`, `exclusive_drop` |
+| collection_type | varchar(50) | `blind_box`, `wave`, `single_release`, `exclusive_drop`, `brick_set`, `figure_line` |
 | release_date | date | optional |
 | msrp_amount | numeric(12,2) | base retail price |
 | currency_code | char(3) | default `USD` |
@@ -243,14 +297,17 @@ Indexes:
 
 ### `marketplace_source`
 
-Catalog of marketplaces and ingestion channels.
+Catalog of marketplaces, retailers, official stores, and ingestion channels.
 
 | column | type | notes |
 | --- | --- | --- |
 | id | uuid / varchar(36) | primary key |
 | code | varchar(50) | unique, e.g. `ebay` |
 | name | varchar(255) | |
+| source_type | varchar(50) | `marketplace`, `retailer`, `official_catalog`, `official_store` |
+| brand_id | fk -> brand.id | nullable; useful for official brand stores |
 | region_code | varchar(20) | optional |
+| base_url | text | optional |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
 
@@ -486,6 +543,39 @@ Recommended near-term compatibility approach:
 4. Backfill old data into new tables.
 5. Deprecate old tables after API migration.
 
+## Suggested Seed Data
+
+The first seed pass should include:
+
+### Brands
+
+- LEGO
+- Funko
+- Hasbro
+- Mattel
+- Bandai
+- Hot Toys
+- NECA
+- Pop Mart
+
+### Example franchises
+
+- LEGO: Star Wars, Marvel, Harry Potter, Icons
+- Funko: Pop!, Soda, Bitty Pop!
+- Hasbro: Star Wars Black Series, Marvel Legends, Transformers, G.I. Joe
+- Mattel: Barbie, Hot Wheels, Masters of the Universe
+- Bandai: Tamashii Nations, S.H. Figuarts, Gundam
+- Hot Toys: Marvel, Star Wars, DC
+- NECA: TMNT, Alien, Predator, horror licenses
+- Pop Mart: Labubu, Skullpanda, Dimoo, Molly
+
+### Sources
+
+- eBay as first resale source
+- Miniso as optional retail / collaboration catalog source
+- Top Pop Culture & Toy Collectibles as optional retailer source
+- Ozzie Collectables as optional retailer source
+
 ## Suggested API Surface
 
 For the app to feel like WatchCharts, the backend should expose:
@@ -542,9 +632,11 @@ Given the current codebase, the most pragmatic next implementation step is:
 
 1. Introduce new models for `brand`, `franchise`, `collection`, `collectible`, `market_sale`, and `price_snapshot`
 2. Leave current `user` and auth tables as-is
-3. Add a small importer for Pop Mart / Funko catalog data
-4. Change eBay sold scraping to write raw and normalized sale rows
-5. Generate daily snapshots from normalized sales instead of writing one-off `toy_price` rows
+3. Add a small importer for brand catalogs, starting with LEGO, Funko, and Pop Mart
+4. Store retailer/source references for Miniso, Top Pop, and Ozzie separately from the brand catalog
+5. Change eBay sold scraping to write raw and normalized sale rows
+6. Add brand-specific matching rules where naming formats differ, especially LEGO set numbers and Funko numbering
+7. Generate daily snapshots from normalized sales instead of writing one-off `toy_price` rows
 
 ## MVP Query Patterns To Design For
 

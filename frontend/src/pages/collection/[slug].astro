@@ -1,0 +1,582 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CollectibleCard from '../../components/ui/CollectibleCard.astro';
+import TrendBadge from '../../components/ui/TrendBadge.astro';
+
+// In a real app we'd fetch based on Astro.params.slug
+const collection = {
+  name: 'Labubu Exciting Macaron',
+  brand: 'Pop Mart',
+  franchise: 'Labubu',
+  releaseDate: '2023-10-15',
+  msrp: '$15.99',
+  description:
+    'The Monsters family takes on sweet macaron flavors in this exciting blind box series. Features 6 regular designs and 1 secret chase.',
+  stats: {
+    totalItems: 7,
+    avgMarketValue: '$45.00',
+    premiumAvg: '+180%',
+    volume30d: 1450,
+  },
+};
+
+const items = [
+  {
+    id: 'lb-macaron-secret',
+    name: 'Chestnut Cocoa (Secret)',
+    series: 'Labubu Exciting Macaron',
+    price: '$185.00',
+    trend: 'up' as const,
+    trendValue: '+12.5%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-5/public',
+    rarity: 'Secret',
+    rank: 1,
+  },
+  {
+    id: 'lb-macaron-sea-salt',
+    name: 'Sea Salt Coconut',
+    series: 'Labubu Exciting Macaron',
+    price: '$32.00',
+    trend: 'down' as const,
+    trendValue: '-1.5%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-6/public',
+    rarity: 'Common',
+  },
+  {
+    id: 'lb-macaron-lychee',
+    name: 'Lychee Berry',
+    series: 'Labubu Exciting Macaron',
+    price: '$38.00',
+    trend: 'up' as const,
+    trendValue: '+4.2%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-7/public',
+    rarity: 'Common',
+    rank: 2,
+  },
+  {
+    id: 'lb-macaron-green-grape',
+    name: 'Green Grape',
+    series: 'Labubu Exciting Macaron',
+    price: '$28.00',
+    trend: 'neutral' as const,
+    trendValue: '0.0%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-8/public',
+    rarity: 'Common',
+  },
+  {
+    id: 'lb-macaron-toffee',
+    name: 'Toffee',
+    series: 'Labubu Exciting Macaron',
+    price: '$29.50',
+    trend: 'up' as const,
+    trendValue: '+1.1%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-1/public',
+    rarity: 'Common',
+  },
+];
+
+// Provide static paths for drafting purposes
+export function getStaticPaths() {
+  return [{ params: { slug: 'labubu-exciting-macaron' } }];
+}
+---
+
+<Layout title={`${collection.name} Prices & Checklist`}>
+  <div class="container page-layout">
+    <header class="collection-header slide-up">
+      <div class="breadcrumbs">
+        <a href="/brands">Brands</a>
+        <span class="separator">/</span>
+        <a href={`/brands/${collection.brand.toLowerCase().replace(' ', '-')}`}
+          >{collection.brand}</a
+        >
+        <span class="separator">/</span>
+        <span class="current">{collection.franchise}</span>
+      </div>
+
+      <div class="header-main">
+        <div class="title-section">
+          <h1 class="collection-title">{collection.name}</h1>
+          <p class="collection-desc">{collection.description}</p>
+
+          <div class="meta-tags">
+            <span class="meta-tag glass-panel"
+              >Release: {collection.releaseDate}</span
+            >
+            <span class="meta-tag glass-panel">Retail: {collection.msrp}</span>
+          </div>
+        </div>
+
+        <div class="stats-card glass-panel fade-in">
+          <div class="stat-row">
+            <span class="stat-label">Total Items</span>
+            <span class="stat-value">{collection.stats.totalItems}</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-row">
+            <span class="stat-label">Avg Market Value</span>
+            <div class="stat-with-trend">
+              <span class="stat-value">{collection.stats.avgMarketValue}</span>
+              <TrendBadge trend="up" value={collection.stats.premiumAvg} />
+            </div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-row">
+            <span class="stat-label">30d Volume</span>
+            <span class="stat-value">{collection.stats.volume30d} Sold</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-frame fade-in" style="animation-delay: 0.2s;">
+      <div class="controls-bar">
+        <div class="filters">
+          <button class="filter-btn active">All Items</button>
+          <button class="filter-btn">Secrets & Chases</button>
+          <button class="filter-btn">Common</button>
+        </div>
+
+        <div class="sort">
+          <span class="sort-label">Sort by:</span>
+          <select class="sort-select glass-panel">
+            <option>Market Value (High to Low)</option>
+            <option>Market Value (Low to High)</option>
+            <option>Name (A-Z)</option>
+            <option>Set Number</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="list-container glass-panel">
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th class="col-image">Image</th>
+              <th class="col-name">Title / Details</th>
+              <th class="col-rarity">Rarity</th>
+              <th class="col-price right">Loose Price</th>
+              <th class="col-price right">New Price</th>
+              <th class="col-action right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              items.map((item) => (
+                <tr>
+                  <td class="col-image">
+                    <a href={`/item/${item.id}`} class="thumbnail">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} />
+                      ) : (
+                        <div class="thumb-fallback">🧸</div>
+                      )}
+                    </a>
+                  </td>
+                  <td class="col-name">
+                    <a href={`/item/${item.id}`} class="item-title">
+                      {item.name}
+                    </a>
+                    <p class="item-series">{item.series}</p>
+                  </td>
+                  <td class="col-rarity">
+                    <span class={`rarity-tag ${item.rarity.toLowerCase()}`}>
+                      {item.rarity}
+                    </span>
+                  </td>
+                  <td class="col-price right">
+                    <span class="price-val font-bold">--</span>
+                  </td>
+                  <td class="col-price right">
+                    <div class="price-trend-wrap">
+                      <span class="price-val font-bold">{item.price}</span>
+                      <span
+                        class={`trend-sm ${item.trend === 'up' ? 'text-up' : item.trend === 'down' ? 'text-down' : 'text-neutral'}`}
+                      >
+                        {item.trendValue}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="col-action right">
+                    <button class="add-btn" aria-label="Add to Portfolio">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <>
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </>
+                      </svg>
+                      <span>Add</span>
+                    </button>
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .page-layout {
+    padding-top: 2rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--brand-primary);
+  }
+
+  .separator {
+    color: var(--border-color);
+  }
+
+  .current {
+    color: var(--text-primary);
+  }
+
+  .header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 4rem;
+    margin-bottom: 4rem;
+  }
+
+  .title-section {
+    flex: 1;
+    max-width: 600px;
+  }
+
+  .collection-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 3rem;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .collection-desc {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .meta-tags {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .meta-tag {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .stats-card {
+    min-width: 320px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-label {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  .stat-with-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .stat-divider {
+    height: 1px;
+    background: var(--border-color);
+  }
+
+  .controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover {
+    color: var(--text-primary);
+    background: var(--hover-overlay);
+  }
+
+  .filter-btn.active {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sort-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .sort-select {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* Table Styles */
+  .list-container {
+    overflow-x: auto;
+    border-radius: 8px;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+
+  .items-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .items-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+  }
+
+  .items-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .items-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .col-image {
+    width: 64px;
+  }
+  .col-name {
+    width: 40%;
+  }
+  .col-rarity {
+    width: 120px;
+  }
+  .col-price {
+    width: 140px;
+  }
+  .col-action {
+    width: 100px;
+  }
+
+  .right {
+    text-align: right;
+  }
+
+  .thumbnail {
+    display: block;
+    width: 48px;
+    height: 48px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .thumb-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .item-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .item-title:hover {
+    color: var(--brand-primary);
+  }
+
+  .item-series {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .rarity-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    border: 1px solid currentColor;
+  }
+
+  .rarity-tag.secret {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .rarity-tag.common {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .price-trend-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+  }
+
+  .font-bold {
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .trend-sm {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .text-up {
+    color: var(--trend-up);
+  }
+  .text-down {
+    color: var(--trend-down);
+  }
+  .text-neutral {
+    color: var(--text-tertiary);
+  }
+
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: white;
+  }
+
+  @media (max-width: 900px) {
+    .header-main {
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .stats-card {
+      width: 100%;
+    }
+
+    .controls-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+  }
+</style>

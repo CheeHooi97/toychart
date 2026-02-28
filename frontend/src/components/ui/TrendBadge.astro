@@ -1,0 +1,60 @@
+---
+export interface Props {
+  trend: 'up' | 'down' | 'neutral';
+  value: string;
+}
+
+const { trend, value } = Astro.props;
+
+const trendIcon = {
+  up: '<path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  down: '<path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  neutral:
+    '<path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+
+const trendColor = {
+  up: 'trend-up',
+  down: 'trend-down',
+  neutral: 'trend-neutral',
+};
+---
+
+<div class={`trend-badge ${trendColor[trend]}`}>
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    set:html={trendIcon[trend]}
+  />
+  <span>{value}</span>
+</div>
+
+<style>
+  .trend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .trend-up {
+    color: var(--trend-up);
+    background: var(--trend-up-bg);
+  }
+
+  .trend-down {
+    color: var(--trend-down);
+    background: var(--trend-down-bg);
+  }
+
+  .trend-neutral {
+    color: var(--trend-neutral);
+    background: rgba(107, 114, 128, 0.1);
+  }
+</style>

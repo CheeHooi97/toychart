@@ -1,0 +1,430 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Search from '../components/ui/Search.astro';
+
+const topGaining = [
+  {
+    item: 'Labubu Chestnut Cocoa',
+    series: 'Exciting Macaron',
+    price: '$185.00',
+    change: '+$22.50',
+    changePct: '+13.8%',
+  },
+  {
+    item: 'Skullpanda The Vision',
+    series: 'Image of Reality',
+    price: '$45.00',
+    change: '+$3.15',
+    changePct: '+7.5%',
+  },
+  {
+    item: 'Dimoo Cotton Candy',
+    series: 'Dating Series',
+    price: '$32.00',
+    change: '+$1.80',
+    changePct: '+5.9%',
+  },
+  {
+    item: 'Hirono The Ghost',
+    series: 'City of Mercy',
+    price: '$55.00',
+    change: '+$2.50',
+    changePct: '+4.7%',
+  },
+  {
+    item: 'Molly Space 100%',
+    series: 'Space Molly',
+    price: '$40.00',
+    change: '+$1.50',
+    changePct: '+3.8%',
+  },
+];
+
+const popMartHot = [
+  {
+    item: 'Labubu Sea Salt Coconut',
+    series: 'Exciting Macaron',
+    price: '$32.00',
+    vol: 145,
+  },
+  {
+    item: 'Skullpanda The Warmth',
+    series: 'Image of Reality',
+    price: '$28.00',
+    vol: 120,
+  },
+  {
+    item: 'Hirono The Crow',
+    series: 'City of Mercy',
+    price: '$25.00',
+    vol: 98,
+  },
+  {
+    item: 'Labubu Lychee Berry',
+    series: 'Exciting Macaron',
+    price: '$38.00',
+    vol: 85,
+  },
+  {
+    item: 'Dimoo Rose Knight',
+    series: 'Dating Series',
+    price: '$22.00',
+    vol: 76,
+  },
+];
+
+const funkoHot = [
+  {
+    item: 'President Loki (Glow)',
+    series: 'Marvel',
+    price: '$85.00',
+    vol: 210,
+  },
+  {
+    item: 'Eddie Munson',
+    series: 'Stranger Things',
+    price: '$110.00',
+    vol: 185,
+  },
+  {
+    item: 'Spider-Man (Black Suit)',
+    series: 'Marvel',
+    price: '$45.00',
+    vol: 150,
+  },
+  {
+    item: 'Anakin Skywalker (Dark Side)',
+    series: 'Star Wars',
+    price: '$65.00',
+    vol: 132,
+  },
+  { item: 'Batman (Art Series)', series: 'DC', price: '$35.00', vol: 95 },
+];
+---
+
+<Layout title="Toychart - Collectible Prices & Market Data">
+  <section class="search-section slide-up">
+    <div class="container">
+      <h1 class="visually-hidden">Collectible Prices and Tracker</h1>
+      <div class="search-box glass-panel">
+        <h2 class="search-heading">Find Collectible Prices & Values</h2>
+        <Search
+          className="home-search"
+          placeholder="Search for Pop Mart, Funko, LEGO..."
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="market-overview fade-in" style="animation-delay: 0.1s;">
+    <div class="container">
+      <div class="data-tables-grid">
+        <!-- Table 1 -->
+        <div class="data-card glass-panel">
+          <div class="card-header">
+            <h3>Top Gaining Collectibles</h3>
+            <a href="/market/gainers" class="text-link">More</a>
+          </div>
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Price</th>
+                <th class="right text-up">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                topGaining.map((row) => (
+                  <tr>
+                    <td>
+                      <a href="/item/dummy" class="item-link">
+                        <span class="item-name">{row.item}</span>
+                        <span class="item-meta">{row.series}</span>
+                      </a>
+                    </td>
+                    <td class="right font-bold">{row.price}</td>
+                    <td class="right text-up text-sm">
+                      {row.change}
+                      <br />({row.changePct})
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table 2 -->
+        <div class="data-card glass-panel">
+          <div class="card-header">
+            <h3>Hot Pop Mart</h3>
+            <a href="/category/pop-mart" class="text-link">More</a>
+          </div>
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Price</th>
+                <th class="right">30d Vol</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                popMartHot.map((row) => (
+                  <tr>
+                    <td>
+                      <a href="/item/dummy" class="item-link">
+                        <span class="item-name">{row.item}</span>
+                        <span class="item-meta">{row.series}</span>
+                      </a>
+                    </td>
+                    <td class="right font-bold">{row.price}</td>
+                    <td class="right text-secondary">{row.vol}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table 3 -->
+        <div class="data-card glass-panel">
+          <div class="card-header">
+            <h3>Hot Funko Pops!</h3>
+            <a href="/category/funko" class="text-link">More</a>
+          </div>
+          <table class="dense-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Price</th>
+                <th class="right">30d Vol</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                funkoHot.map((row) => (
+                  <tr>
+                    <td>
+                      <a href="/item/dummy" class="item-link">
+                        <span class="item-name">{row.item}</span>
+                        <span class="item-meta">{row.series}</span>
+                      </a>
+                    </td>
+                    <td class="right font-bold">{row.price}</td>
+                    <td class="right text-secondary">{row.vol}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Search Section */
+  .search-section {
+    padding: 3rem 0;
+  }
+
+  .search-box {
+    padding: 2.5rem;
+    text-align: center;
+    border-top: 4px solid var(--brand-primary);
+  }
+
+  .search-heading {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Specific override for the search component in this context */
+  :global(.home-search) {
+    max-width: 800px !important;
+    margin: 0 auto;
+  }
+
+  :global(.home-search .search-input-wrapper) {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  /* Shared Utility Links */
+  .text-link {
+    color: var(--brand-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .text-link:hover {
+    color: var(--brand-accent);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-tertiary {
+    color: var(--text-tertiary);
+  }
+
+  .right {
+    text-align: right;
+  }
+
+  .font-bold {
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .text-up {
+    color: var(--trend-up);
+  }
+
+  .text-down {
+    color: var(--trend-down);
+  }
+
+  .text-neutral {
+    color: var(--text-tertiary);
+  }
+
+  .text-sm {
+    font-size: 0.8rem;
+  }
+
+  /* Market Overview section */
+  .market-overview {
+    padding: 1rem 0 4rem;
+  }
+
+  .data-tables-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .data-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .card-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .dense-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    background: transparent;
+  }
+
+  .dense-table th {
+    text-align: left;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .dense-table td {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    vertical-align: middle;
+  }
+
+  .dense-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .dense-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .item-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .item-name {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .item-link:hover .item-name {
+    color: var(--brand-primary);
+  }
+
+  .item-meta {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .right {
+    text-align: right;
+  }
+
+  .font-bold {
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .text-up {
+    color: var(--trend-up);
+  }
+
+  .text-sm {
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 1024px) {
+    .data-tables-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .data-tables-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .search-box {
+      padding: 1.5rem 1rem;
+    }
+  }
+</style>

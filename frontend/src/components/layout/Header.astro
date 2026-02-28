@@ -1,0 +1,254 @@
+---
+import HeaderLinks from './HeaderLinks.astro';
+---
+
+<header class="glass-header">
+  <div class="container header-content">
+    <a href="/" class="logo">
+      <span class="logo-icon">🧸</span>
+      <span class="logo-text text-gradient">toychart</span>
+    </a>
+
+    <div class="desktop-nav">
+      <HeaderLinks />
+    </div>
+
+    <div class="header-actions">
+      <!-- Search Placeholder -->
+      <button class="search-btn glass-panel" aria-label="Search items">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="11" cy="11" r="8"></circle><line
+            x1="21"
+            y1="21"
+            x2="16.65"
+            y2="16.65"></line></svg
+        >
+        <span class="search-placeholder">Search collectibles...</span>
+        <span class="search-shortcut">⌘K</span>
+      </button>
+
+      <a href="/portfolio" class="profile-btn glass-panel">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle
+            cx="12"
+            cy="7"
+            r="4"></circle></svg
+        >
+      </a>
+    </div>
+  </div>
+
+  <div class="category-nav">
+    <div class="container cat-links">
+      <a href="/category/video-games">Video Games</a>
+      <a href="/category/pokemon">Pokémon Cards</a>
+      <a href="/category/comics">Comic Books</a>
+      <a href="/category/pop-mart" class="active">Pop Mart</a>
+      <a href="/category/funko">Funko Pops</a>
+      <a href="/category/lego">LEGO</a>
+      <a href="/category/coins">Coins</a>
+      <div class="more-dropdown">
+        <span>More</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg
+        >
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  .category-nav {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .category-nav::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .cat-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 48px;
+    white-space: nowrap;
+  }
+
+  .cat-links a,
+  .more-dropdown {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: color 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .cat-links a:hover,
+  .more-dropdown:hover {
+    color: var(--text-primary);
+  }
+
+  .cat-links a.active {
+    color: var(--brand-primary);
+    border-bottom: 2px solid var(--brand-primary);
+    height: 100%;
+    align-items: center;
+    display: flex;
+    padding-bottom: 0px; /* offset the border */
+  }
+
+  .glass-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(10, 10, 10, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-icon {
+    font-size: 1.75rem;
+    transform: rotate(-10deg);
+    display: inline-block;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .desktop-nav {
+      display: block;
+      margin-right: auto;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .search-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .search-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--text-tertiary);
+    color: var(--text-primary);
+  }
+
+  .search-placeholder {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .search-placeholder {
+      display: inline-block;
+      width: 140px;
+      text-align: left;
+    }
+  }
+
+  .search-shortcut {
+    display: none;
+    background: var(--bg-primary);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    border: 1px solid var(--border-color);
+  }
+
+  @media (min-width: 640px) {
+    .search-shortcut {
+      display: inline-block;
+    }
+  }
+
+  .profile-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+  }
+
+  .profile-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+  }
+</style>

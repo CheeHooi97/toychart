@@ -1,0 +1,182 @@
+---
+export interface Props {
+  placeholder?: string;
+  className?: string;
+}
+
+const {
+  placeholder = 'Search series, characters, or variants...',
+  className = '',
+} = Astro.props;
+---
+
+<div class={`search-container ${className}`}>
+  <div class="search-input-wrapper glass-panel">
+    <svg
+      class="search-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      ><circle cx="11" cy="11" r="8"></circle><line
+        x1="21"
+        y1="21"
+        x2="16.65"
+        y2="16.65"></line></svg
+    >
+    <input
+      type="text"
+      class="search-input"
+      placeholder={placeholder}
+      aria-label="Search"
+    />
+    <div class="search-shortcut">
+      <span>⌘</span>
+      <span>K</span>
+    </div>
+  </div>
+
+  <div class="search-suggestions glass-panel">
+    <div class="suggestion-group">
+      <h4 class="suggestion-title">Trending Searches</h4>
+      <ul class="suggestion-list">
+        <li>
+          <a href="/search?q=labubu+macaron" class="suggestion-item">
+            <span class="suggestion-icon">📈</span>
+            <span class="suggestion-text">Labubu Exciting Macaron</span>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/search?q=skullpanda+image+of+reality"
+            class="suggestion-item"
+          >
+            <span class="suggestion-icon">📈</span>
+            <span class="suggestion-text">Skullpanda Image Of Reality</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .search-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    gap: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .search-input-wrapper:focus-within {
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .search-icon {
+    color: var(--text-tertiary);
+  }
+
+  .search-input-wrapper:focus-within .search-icon {
+    color: var(--brand-primary);
+  }
+
+  .search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    padding: 0.5rem 0;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .search-shortcut {
+    display: flex;
+    gap: 0.25rem;
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .search-shortcut span {
+    background: var(--bg-primary);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+  }
+
+  .search-suggestions {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    width: 100%;
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    padding: 1rem;
+  }
+
+  .search-input:focus ~ .search-suggestions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .suggestion-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+
+  .suggestion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+
+  .suggestion-item:hover {
+    background: var(--hover-overlay);
+  }
+
+  .suggestion-text {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+  }
+
+  .suggestion-item:hover .suggestion-text {
+    color: var(--text-primary);
+  }
+</style>
