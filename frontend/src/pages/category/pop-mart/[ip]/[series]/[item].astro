@@ -1,0 +1,290 @@
+---
+import Layout from '../../../../../layouts/Layout.astro';
+import PriceChart from '../../../../../components/ui/PriceChart.tsx';
+import TrendBadge from '../../../../../components/ui/TrendBadge.astro';
+import { classifyPopmartSeries, sanitizePopmartTitle } from '../../../../../lib/popmartSeries';
+
+type SeriesApiItem = {
+  title?: string;
+  imageUrl?: string;
+  avgPrice?: string;
+  soldCount?: number;
+};
+
+type EbaySoldItem = {
+  title: string;
+  price: string;
+  imageUrl: string;
+  itemWebUrl: string;
+  caption: string;
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return '--';
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const ip = Astro.params.ip ?? 'labubu';
+const seriesSlug = Astro.params.series ?? '';
+const itemSlug = Astro.params.item ?? '';
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+
+const item = {
+  name: itemSlug.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+  series: seriesSlug.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+  brand: 'Pop Mart',
+  releaseDate: '2023-10-15',
+  rarity: 'Regular',
+  odds: '--',
+  retailPrice: '$15.99',
+  imageUrl: '',
+  stats: {
+    marketValue: '--',
+    trend: 'up' as const,
+    trendPercent: '+0.0%',
+    trend30d: '+0.0%',
+    volatility: 'Low',
+    sales30d: 0,
+  },
+};
+
+try {
+  const res = await fetch(`${apiBaseUrl}/category/pop-mart/${ip}/${seriesSlug}/${itemSlug}`);
+  const payload = await res.json();
+  const result = payload?.result;
+  const matched: SeriesApiItem | null = result?.item && typeof result.item === 'object' ? result.item : null;
+  if (matched?.title) {
+    item.name = matched.title;
+  }
+  if (result?.series) {
+    item.series = result.series;
+  }
+  if (matched?.imageUrl) {
+    item.imageUrl = matched.imageUrl;
+  }
+  if (matched?.avgPrice) {
+    item.stats.marketValue = formatUsd(matched.avgPrice);
+  }
+  if (typeof matched?.soldCount === 'number') {
+    item.stats.sales30d = matched.soldCount;
+  }
+} catch (_) {
+  // fallback with slug-derived names
+}
+
+const keyword = `${ip} ${item.name}`;
+let recentSales: Array<{ date: string; price: string; condition: string; platform: string; itemUrl: string }> = [];
+
+try {
+  const res = await fetch(`${apiBaseUrl}/ebay/search/sold/scrape`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ keyword, maxPages: 3 }),
+  });
+
+  const payload = await res.json();
+  const soldItems: EbaySoldItem[] = Array.isArray(payload?.result) ? payload.result : [];
+  const filteredBySeries = soldItems.filter((sale) => classifyPopmartSeries(sale.title) === item.series);
+  const filtered = filteredBySeries.filter((sale) =>
+    sanitizePopmartTitle(sale.title || '').toLowerCase().includes(item.name.toLowerCase()),
+  );
+  const effectiveItems = filtered.length > 0 ? filtered : filteredBySeries.length > 0 ? filteredBySeries : soldItems;
+
+  if (effectiveItems.length > 0) {
+    item.stats.marketValue = formatUsd(effectiveItems[0].price);
+    item.stats.sales30d = effectiveItems.length;
+    if (!item.imageUrl) item.imageUrl = effectiveItems[0].imageUrl || '';
+    recentSales = effectiveItems.slice(0, 5).map((sale) => ({
+      date: sale.caption?.trim() || '--',
+      price: formatUsd(sale.price),
+      condition: 'Sold',
+      platform: 'eBay',
+      itemUrl: sale.itemWebUrl || '',
+    }));
+  }
+} catch (_) {
+  recentSales = [];
+}
+
+const salesHistoryHref = `/category/pop-mart/${ip}/${seriesSlug}/${itemSlug}/sales`;
+
+const chartData = [120, 125, 118, 135, 142, 150, 145, 160, 165, 175, 172, 185];
+const chartLabels = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+
+export function getStaticPaths() {
+  const macaronItems = [
+    'soymilk',
+    'lychee-berry',
+    'green-grape',
+    'sea-salt-coconut',
+    'toffee',
+    'sesame-bean',
+    'chestnut-cocoa',
+  ];
+  return macaronItems.map((slug) => ({
+    params: { ip: 'labubu', series: 'labubu-exciting-macaron', item: slug },
+  }));
+}
+---
+
+<Layout title={`${item.name} | ${item.series} | Market Price`}>
+  <div class="container page-layout">
+    <div class="breadcrumbs slide-up">
+      <a href="/brands">Brands</a>
+      <span class="separator">/</span>
+      <a href="/category/pop-mart">Pop Mart</a>
+      <span class="separator">/</span>
+      <a href={`/category/pop-mart/${ip}`}>{ip.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</a>
+      <span class="separator">/</span>
+      <a href={`/category/pop-mart/${ip}/${seriesSlug}`}>{item.series}</a>
+      <span class="separator">/</span>
+      <span class="current">{item.name}</span>
+    </div>
+
+    <div class="item-grid">
+      <div class="item-sidebar fade-in">
+        <div class="image-showcase glass-panel">
+          <div class="rarity-badge">
+            <span class="rarity-dot"></span>
+            {item.rarity}
+          </div>
+          <div class="image-inner">
+            {
+              item.imageUrl ? (
+                <img src={item.imageUrl} alt={item.name} class="image-photo" loading="lazy" />
+              ) : (
+                <span class="image-fallback-icon">Toy</span>
+              )
+            }
+          </div>
+        </div>
+
+        <div class="item-specs glass-panel">
+          <h3 class="specs-title">Item Details</h3>
+          <ul class="specs-list">
+            <li><span class="spec-label">Brand</span><span class="spec-value">{item.brand}</span></li>
+            <li><span class="spec-label">Series</span><span class="spec-value">{item.series}</span></li>
+            <li><span class="spec-label">Release</span><span class="spec-value">{item.releaseDate}</span></li>
+            <li><span class="spec-label">Retail Price</span><span class="spec-value">{item.retailPrice}</span></li>
+            <li><span class="spec-label">Odds</span><span class="spec-value">{item.odds}</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="item-main fade-in" style="animation-delay: 0.1s;">
+        <div class="item-header">
+          <h1 class="item-title">{item.name}</h1>
+          <p class="item-subtitle">{item.series}</p>
+        </div>
+
+        <div class="price-dashboard glass-panel">
+          <div class="price-header">
+            <span class="price-label">Estimated Market Value</span>
+            <span class="update-time">Updated recently</span>
+          </div>
+
+          <div class="condition-prices">
+            <div class="condition-col"><span class="cond-label">Loose</span><span class="cond-val text-primary">--</span></div>
+            <div class="condition-col active">
+              <span class="cond-label">Open Box / CIB</span>
+              <span class="cond-val">{item.stats.marketValue}</span>
+              <div class="cond-trend"><TrendBadge trend={item.stats.trend} value={item.stats.trendPercent} /></div>
+            </div>
+            <div class="condition-col"><span class="cond-label">New / Sealed</span><span class="cond-val text-primary">--</span></div>
+          </div>
+
+          <div class="price-metrics">
+            <div class="metric"><span class="metric-label">30d Change</span><span class="metric-value text-up">{item.stats.trend30d}</span></div>
+            <div class="metric"><span class="metric-label">Volatility</span><span class="metric-value">{item.stats.volatility}</span></div>
+            <div class="metric"><span class="metric-label">30d Sales</span><span class="metric-value">{item.stats.sales30d}</span></div>
+          </div>
+        </div>
+
+        <div class="chart-section fade-in" style="animation-delay: 0.2s;">
+          <PriceChart client:load dataPoints={chartData} labels={chartLabels} />
+        </div>
+
+        <div class="sales-history fade-in" style="animation-delay: 0.3s;">
+          <h3 class="section-title">Recent Sales</h3>
+          <div class="table-container glass-panel">
+            <table class="sales-table">
+              <thead><tr><th>Date</th><th>Sale Price</th><th>Condition</th><th>Platform</th><th>URL</th></tr></thead>
+              <tbody>
+                {
+                  recentSales.length > 0 ? recentSales.map((sale) => (
+                    <tr>
+                      <td>{sale.date}</td>
+                      <td class="font-bold">{sale.price}</td>
+                      <td><span class="condition-badge">{sale.condition}</span></td>
+                      <td>{sale.platform}</td>
+                      <td>{sale.itemUrl ? <a href={sale.itemUrl} target="_blank" rel="noopener noreferrer" class="sale-link">View</a> : '--'}</td>
+                    </tr>
+                  )) : (
+                    <tr><td colspan="5">No sold listings found.</td></tr>
+                  )
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="view-more-container">
+            <a href={salesHistoryHref} class="view-more">View All Sales History -></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .page-layout { padding-top: 2rem; }
+  .breadcrumbs { display: flex; gap: 0.5rem; font-size: 0.85rem; color: var(--text-tertiary); margin-bottom: 2rem; }
+  .breadcrumbs a:hover { color: var(--brand-primary); }
+  .separator { color: var(--border-color); }
+  .current { color: var(--text-primary); }
+  .item-grid { display: grid; grid-template-columns: 350px 1fr; gap: 3rem; }
+  .image-showcase { position: relative; width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; overflow: hidden; }
+  .image-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%); }
+  .image-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .image-fallback-icon { font-size: 2rem; opacity: 0.8; }
+  .rarity-badge { position: absolute; top: 1rem; left: 1rem; z-index: 10; display: flex; align-items: center; gap: 0.5rem; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbd38d; padding: 0.4rem 0.8rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .rarity-dot { width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; box-shadow: 0 0 8px #f59e0b; }
+  .item-specs { padding: 1.5rem; }
+  .specs-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; font-family: 'Outfit', sans-serif; }
+  .specs-list { display: flex; flex-direction: column; gap: 1rem; }
+  .specs-list li { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+  .specs-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .spec-label { color: var(--text-secondary); font-size: 0.9rem; }
+  .spec-value { color: var(--text-primary); font-weight: 500; font-size: 0.95rem; text-align: right; }
+  .item-main { display: flex; flex-direction: column; gap: 2rem; }
+  .item-title { font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .item-subtitle { font-size: 1.25rem; color: var(--brand-primary); font-family: 'Outfit', sans-serif; font-weight: 500; }
+  .price-dashboard { padding: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+  .price-header { display: flex; justify-content: space-between; align-items: center; }
+  .price-label { font-size: 0.9rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .update-time { font-size: 0.8rem; color: var(--text-tertiary); }
+  .condition-prices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; }
+  .condition-col { display: flex; flex-direction: column; align-items: center; padding: 1rem; border-radius: 6px; }
+  .condition-col.active { background: var(--bg-secondary); box-shadow: 0 0 0 1px var(--brand-primary); }
+  .cond-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+  .cond-val { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; }
+  .cond-trend { margin-top: 0.5rem; }
+  .price-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+  .metric { display: flex; flex-direction: column; gap: 0.5rem; }
+  .metric-label { font-size: 0.8rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-size: 1.25rem; font-weight: 600; font-family: 'Outfit', sans-serif; }
+  .text-up { color: var(--trend-up); }
+  .section-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; }
+  .table-container { overflow-x: auto; }
+  .sales-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .sales-table th { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem; border-bottom: 1px solid var(--border-color); font-weight: 600; }
+  .sales-table td { padding: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.95rem; }
+  .font-bold { font-weight: 700; font-family: 'Outfit', sans-serif; }
+  .condition-badge { background: var(--bg-secondary); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; border: 1px solid var(--border-color); }
+  .view-more-container { margin-top: 1rem; text-align: right; }
+  .view-more { color: var(--brand-primary); font-weight: 600; font-size: 0.9rem; }
+  .sale-link { color: var(--brand-primary); font-weight: 600; }
+  @media (max-width: 900px) {
+    .item-grid { grid-template-columns: 1fr; }
+  }
+</style>

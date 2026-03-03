@@ -27,6 +27,10 @@ type BrowseResponse struct {
 			Value    string `json:"value"`
 			Currency string `json:"currency"`
 		} `json:"price"`
+		CurrentBidPrice struct {
+			Value    string `json:"value"`
+			Currency string `json:"currency"`
+		} `json:"currentBidPrice"`
 
 		Image struct {
 			ImageUrl string `json:"imageUrl"`

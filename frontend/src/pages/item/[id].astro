@@ -2,6 +2,22 @@
 import Layout from '../../layouts/Layout.astro';
 import PriceChart from '../../components/ui/PriceChart.tsx';
 import TrendBadge from '../../components/ui/TrendBadge.astro';
+import { classifyPopmartSeries, sanitizePopmartTitle } from '../../lib/popmartSeries';
+
+type EbaySoldItem = {
+  title: string;
+  price: string;
+  itemWebUrl: string;
+  caption: string;
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) {
+    return '--';
+  }
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
 
 // Dummy data
 const item = {
@@ -24,38 +40,101 @@ const item = {
   },
 };
 
-const recentSales = [
+const fallbackRecentSales = [
   {
     date: 'Oct 24, 2023',
     price: '$185.00',
     condition: 'Sealed',
     platform: 'eBay',
+    itemUrl: '',
   },
   {
     date: 'Oct 22, 2023',
     price: '$180.00',
     condition: 'Open Box',
     platform: 'Mercari',
+    itemUrl: '',
   },
   {
     date: 'Oct 18, 2023',
     price: '$195.00',
     condition: 'Sealed',
     platform: 'eBay',
+    itemUrl: '',
   },
   {
     date: 'Oct 15, 2023',
     price: '$175.00',
     condition: 'Sealed',
     platform: 'eBay',
+    itemUrl: '',
   },
   {
     date: 'Oct 10, 2023',
     price: '$160.00',
     condition: 'Open Box',
     platform: 'StockX',
+    itemUrl: '',
   },
 ];
+
+const keywordByItemId: Record<string, string> = {
+  'lb-macaron-secret': 'labubu chestnut cocoa secret pop mart',
+};
+
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+const defaultKeyword = keywordByItemId[Astro.params.id ?? ''] ?? 'pop mart labubu';
+const keywordFromQuery = Astro.url.searchParams.get('keyword')?.trim() ?? '';
+const titleFromQuery = Astro.url.searchParams.get('title')?.trim() ?? '';
+const seriesFromQuery = Astro.url.searchParams.get('series')?.trim() ?? '';
+const keyword = keywordFromQuery || defaultKeyword;
+
+if (titleFromQuery) {
+  item.name = sanitizePopmartTitle(titleFromQuery);
+  item.series = seriesFromQuery || classifyPopmartSeries(titleFromQuery);
+}
+
+let recentSales = fallbackRecentSales;
+
+try {
+  const res = await fetch(`${apiBaseUrl}/ebay/search/sold/scrape`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ keyword, maxPages: 3 }),
+  });
+
+  const payload = await res.json();
+  const soldItems: EbaySoldItem[] = Array.isArray(payload?.result)
+    ? payload.result
+    : [];
+  const selectedSeries = (seriesFromQuery || '').trim();
+  const effectiveItems =
+    selectedSeries && selectedSeries !== 'All Series'
+      ? soldItems.filter((sale) => classifyPopmartSeries(sale.title) === selectedSeries)
+      : soldItems;
+
+  if (effectiveItems.length > 0) {
+    if (!titleFromQuery && effectiveItems[0].title?.trim()) {
+      item.name = sanitizePopmartTitle(effectiveItems[0].title);
+      item.series = classifyPopmartSeries(effectiveItems[0].title);
+    }
+
+    recentSales = effectiveItems.slice(0, 5).map((sale) => ({
+      date: sale.caption?.trim() || '--',
+      price: formatUsd(sale.price),
+      condition: 'Sold',
+      platform: 'eBay',
+      itemUrl: sale.itemWebUrl || '',
+    }));
+
+    item.stats.marketValue = formatUsd(effectiveItems[0].price);
+    item.stats.sales30d = effectiveItems.length;
+  }
+} catch (_) {
+  recentSales = fallbackRecentSales;
+}
+
+const salesHistoryHref = `/item/${Astro.params.id ?? 'lb-macaron-secret'}/sales?keyword=${encodeURIComponent(keyword)}&title=${encodeURIComponent(item.name)}&series=${encodeURIComponent(item.series)}`;
 
 // Placeholder chart data
 const chartData = [120, 125, 118, 135, 142, 150, 145, 160, 165, 175, 172, 185];
@@ -86,7 +165,7 @@ export function getStaticPaths() {
       <span class="separator">/</span>
       <a href="/brands/pop-mart">{item.brand}</a>
       <span class="separator">/</span>
-      <a href="/collection/labubu-exciting-macaron">{item.series}</a>
+      <a href="/category/pop-mart/labubu/labubu-exciting-macaron">{item.series}</a>
       <span class="separator">/</span>
       <span class="current">{item.name}</span>
     </div>
@@ -229,6 +308,7 @@ export function getStaticPaths() {
                   <th>Sale Price</th>
                   <th>Condition</th>
                   <th>Platform</th>
+                  <th>URL</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,6 +321,22 @@ export function getStaticPaths() {
                         <span class="condition-badge">{sale.condition}</span>
                       </td>
                       <td>{sale.platform}</td>
+                      <td>
+                        {
+                          sale.itemUrl ? (
+                            <a
+                              href={sale.itemUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="sale-link"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            '--'
+                          )
+                        }
+                      </td>
                     </tr>
                   ))
                 }
@@ -248,7 +344,7 @@ export function getStaticPaths() {
             </table>
           </div>
           <div class="view-more-container">
-            <a href="#" class="view-more">View All Sales History →</a>
+            <a href={salesHistoryHref} class="view-more">View All Sales History -></a>
           </div>
         </div>
       </div>
@@ -639,6 +735,15 @@ export function getStaticPaths() {
   }
 
   .view-more:hover {
+    color: var(--brand-accent);
+  }
+
+  .sale-link {
+    color: var(--brand-primary);
+    font-weight: 600;
+  }
+
+  .sale-link:hover {
     color: var(--brand-accent);
   }
 

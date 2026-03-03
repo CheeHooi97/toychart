@@ -20,6 +20,12 @@ const collection = {
   },
 };
 
+const premiumTrend = collection.stats.premiumAvg.trim().startsWith('-')
+  ? 'down'
+  : collection.stats.premiumAvg.trim().startsWith('+')
+    ? 'up'
+    : 'neutral';
+
 const items = [
   {
     id: 'lb-macaron-secret',
@@ -78,6 +84,28 @@ const items = [
       'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-1/public',
     rarity: 'Common',
   },
+  {
+    id: 'lb-macaron-sesame-bean',
+    name: 'Sesame Bean',
+    series: 'Labubu Exciting Macaron',
+    price: '$31.00',
+    trend: 'up' as const,
+    trendValue: '+1.9%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-2/public',
+    rarity: 'Common',
+  },
+  {
+    id: 'lb-macaron-soymilk',
+    name: 'Soymilk',
+    series: 'Labubu Exciting Macaron',
+    price: '$30.00',
+    trend: 'neutral' as const,
+    trendValue: '0.0%',
+    imageUrl:
+      'https://imagedelivery.net/j3cQhHk0Y2fW12f0X0X0Xw/placeholder-3/public',
+    rarity: 'Common',
+  },
 ];
 
 // Provide static paths for drafting purposes
@@ -121,8 +149,8 @@ export function getStaticPaths() {
           <div class="stat-row">
             <span class="stat-label">Avg Market Value</span>
             <div class="stat-with-trend">
-              <span class="stat-value">{collection.stats.avgMarketValue}</span>
-              <TrendBadge trend="up" value={collection.stats.premiumAvg} />
+              <span class="stat-value stat-price">{collection.stats.avgMarketValue}</span>
+              <span class={`stat-premium ${premiumTrend}`}>{collection.stats.premiumAvg}</span>
             </div>
           </div>
           <div class="stat-divider"></div>
@@ -138,17 +166,14 @@ export function getStaticPaths() {
       <div class="controls-bar">
         <div class="filters">
           <button class="filter-btn active">All Items</button>
-          <button class="filter-btn">Secrets & Chases</button>
-          <button class="filter-btn">Common</button>
         </div>
 
         <div class="sort">
           <span class="sort-label">Sort by:</span>
-          <select class="sort-select glass-panel">
-            <option>Market Value (High to Low)</option>
-            <option>Market Value (Low to High)</option>
-            <option>Name (A-Z)</option>
-            <option>Set Number</option>
+          <select class="sort-select glass-panel" id="collection-sort">
+            <option value="price-desc">Market Value (High to Low)</option>
+            <option value="price-asc">Market Value (Low to High)</option>
+            <option value="name-asc">Name (A-Z)</option>
           </select>
         </div>
       </div>
@@ -160,15 +185,14 @@ export function getStaticPaths() {
               <th class="col-image">Image</th>
               <th class="col-name">Title / Details</th>
               <th class="col-rarity">Rarity</th>
-              <th class="col-price right">Loose Price</th>
-              <th class="col-price right">New Price</th>
-              <th class="col-action right">Action</th>
+              <th class="col-price">Avg Price</th>
+              <th class="col-action">Action</th>
             </tr>
           </thead>
           <tbody>
             {
               items.map((item) => (
-                <tr>
+                <tr data-name={item.name.toLowerCase()} data-price={parseFloat(item.price.replace('$', ''))}>
                   <td class="col-image">
                     <a href={`/item/${item.id}`} class="thumbnail">
                       {item.imageUrl ? (
@@ -189,20 +213,10 @@ export function getStaticPaths() {
                       {item.rarity}
                     </span>
                   </td>
-                  <td class="col-price right">
-                    <span class="price-val font-bold">--</span>
+                  <td class="col-price">
+                    <span class="price-val font-bold">{item.price}</span>
                   </td>
-                  <td class="col-price right">
-                    <div class="price-trend-wrap">
-                      <span class="price-val font-bold">{item.price}</span>
-                      <span
-                        class={`trend-sm ${item.trend === 'up' ? 'text-up' : item.trend === 'down' ? 'text-down' : 'text-neutral'}`}
-                      >
-                        {item.trendValue}
-                      </span>
-                    </div>
-                  </td>
-                  <td class="col-action right">
+                  <td class="col-action">
                     <button class="add-btn" aria-label="Add to Portfolio">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -232,6 +246,35 @@ export function getStaticPaths() {
     </div>
   </div>
 </Layout>
+
+<script is:inline>
+  (() => {
+    const sortSelect = document.getElementById('collection-sort');
+    const tableBody = document.querySelector('.items-table tbody');
+    if (!sortSelect || !tableBody) return;
+
+    const sortRows = () => {
+      const rows = Array.from(tableBody.querySelectorAll('tr'));
+      const mode = sortSelect.value;
+
+      rows.sort((a, b) => {
+        const aName = a.getAttribute('data-name') || '';
+        const bName = b.getAttribute('data-name') || '';
+        const aPrice = Number(a.getAttribute('data-price') || 0);
+        const bPrice = Number(b.getAttribute('data-price') || 0);
+
+        if (mode === 'price-asc') return aPrice - bPrice;
+        if (mode === 'price-desc') return bPrice - aPrice;
+        return aName.localeCompare(bName);
+      });
+
+      rows.forEach((row) => tableBody.appendChild(row));
+    };
+
+    sortSelect.addEventListener('change', sortRows);
+    sortRows();
+  })();
+</script>
 
 <style>
   .page-layout {
@@ -327,8 +370,33 @@ export function getStaticPaths() {
 
   .stat-with-trend {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 0.15rem;
+  }
+
+  .stat-price {
+    min-width: 0;
+    text-align: right;
+  }
+
+  .stat-premium {
+    font-size: 0.78rem;
+    line-height: 1;
+    font-weight: 600;
+  }
+
+  .stat-premium.up {
+    color: var(--trend-up);
+  }
+
+  .stat-premium.down {
+    color: var(--trend-down);
+  }
+
+  .stat-premium.neutral {
+    color: var(--text-tertiary);
   }
 
   .stat-divider {
@@ -452,6 +520,7 @@ export function getStaticPaths() {
   .right {
     text-align: right;
   }
+
 
   .thumbnail {
     display: block;

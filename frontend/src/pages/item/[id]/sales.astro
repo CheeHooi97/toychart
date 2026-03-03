@@ -1,0 +1,204 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { classifyPopmartSeries } from '../../../lib/popmartSeries';
+
+type EbaySoldItem = {
+  title: string;
+  price: string;
+  itemWebUrl: string;
+  caption: string;
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) {
+    return '--';
+  }
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const keywordByItemId: Record<string, string> = {
+  'lb-macaron-secret': 'labubu chestnut cocoa secret pop mart',
+};
+
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+const defaultKeyword = keywordByItemId[Astro.params.id ?? ''] ?? 'pop mart labubu';
+const keywordFromQuery = Astro.url.searchParams.get('keyword')?.trim() ?? '';
+const titleFromQuery = Astro.url.searchParams.get('title')?.trim() ?? '';
+const seriesFromQuery = Astro.url.searchParams.get('series')?.trim() ?? '';
+
+const keyword = keywordFromQuery || defaultKeyword;
+const itemTitle = titleFromQuery || 'Sales History';
+const seriesTitle = seriesFromQuery || 'Sold Items';
+
+let allSales: EbaySoldItem[] = [];
+
+try {
+  const res = await fetch(`${apiBaseUrl}/ebay/search/sold/scrape`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ keyword, maxPages: 5 }),
+  });
+
+  const payload = await res.json();
+  const rawSales: EbaySoldItem[] = Array.isArray(payload?.result) ? payload.result : [];
+  const selectedSeries = (seriesFromQuery || '').trim();
+  allSales =
+    selectedSeries && selectedSeries !== 'All Series'
+      ? rawSales.filter((sale) => classifyPopmartSeries(sale.title) === selectedSeries)
+      : rawSales;
+} catch (_) {
+  allSales = [];
+}
+
+const itemHref = `/item/${Astro.params.id ?? 'lb-macaron-secret'}?keyword=${encodeURIComponent(keyword)}&title=${encodeURIComponent(itemTitle)}&series=${encodeURIComponent(seriesTitle)}`;
+
+export function getStaticPaths() {
+  return [{ params: { id: 'lb-macaron-secret' } }];
+}
+---
+
+<Layout title={`${itemTitle} | Sales History`}>
+  <div class="container page-layout">
+    <div class="page-header slide-up">
+      <div>
+        <a href={itemHref} class="back-link">← Back to Item</a>
+        <h1 class="page-title">{itemTitle}</h1>
+        <p class="page-subtitle">{seriesTitle} · {allSales.length} sold results</p>
+      </div>
+    </div>
+
+    <section class="sales-history fade-in">
+      <div class="table-container glass-panel">
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Title</th>
+              <th>Price</th>
+              <th>URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              allSales.length > 0 ? (
+                allSales.map((sale, index) => (
+                  <tr>
+                    <td>{index + 1}</td>
+                    <td>
+                      {sale.caption?.trim() || '--'}
+                    </td>
+                    <td class="sale-title">{sale.title || '--'}</td>
+                    <td class="font-bold">{formatUsd(sale.price)}</td>
+                    <td>
+                      {
+                        sale.itemWebUrl ? (
+                          <a
+                            href={sale.itemWebUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="sale-link"
+                          >
+                            View
+                          </a>
+                        ) : (
+                          '--'
+                        )
+                      }
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colspan="5" class="empty-cell">No sold history found for this keyword.</td>
+                </tr>
+              )
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .page-layout {
+    padding-top: 2rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .back-link {
+    color: var(--brand-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .page-title {
+    margin-top: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .page-subtitle {
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .sales-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .sales-table th {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .sales-table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: top;
+  }
+
+  .sales-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .sale-title {
+    max-width: 540px;
+  }
+
+  .font-bold {
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .sale-link {
+    color: var(--brand-primary);
+    font-weight: 600;
+  }
+
+  .sale-link:hover {
+    color: var(--brand-accent);
+  }
+
+  .empty-cell {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 1.25rem;
+  }
+</style>

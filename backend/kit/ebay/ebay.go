@@ -69,6 +69,15 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 
 			chromedp.Evaluate(`
 			(() => {
+				const cleanText = (value) => {
+					if (!value) return "";
+					return value
+						.replace(/\bAUTHENTIC\b/gi, "")
+						.replace(/Opens in a new window or tab/gi, "")
+						.replace(/\s+/g, " ")
+						.trim();
+				};
+
 				const rows = Array.from(
 					document.querySelectorAll('ul.srp-results li.s-card')
 				);
@@ -91,12 +100,12 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 
 					return {
 						itemId: itemId,
-						title: titleEl ? titleEl.innerText.trim() : "",
+						title: cleanText(titleEl ? titleEl.innerText : ""),
 						price: priceEl ? priceEl.innerText.trim() : "N/A",
 						imageUrl: imgEl ? imgEl.src : "",
 						itemWebUrl: link,
-						subtitle: subtitleEl ? subtitleEl.innerText.trim() : "",
-						caption: captionEl ? captionEl.innerText.trim() : ""
+						subtitle: cleanText(subtitleEl ? subtitleEl.innerText : ""),
+						caption: cleanText(captionEl ? captionEl.innerText : "")
 					};
 				});
 			})()
@@ -122,6 +131,10 @@ func ScrapEbaySoldCards(baseUrl string, maxPages int) ([]CardData, error) {
 			// Filter noise cards
 			if strings.Contains(item.Title, "Shop on eBay") {
 				continue
+			}
+
+			if strings.TrimSpace(item.ItemWebURL) == "" {
+				item.ItemWebURL = "https://www.ebay.com/itm/" + strings.TrimSpace(item.ItemID)
 			}
 
 			if !seen[item.ItemID] {
@@ -176,18 +189,54 @@ func SearchSoldToyPrices(keyword string) ([]SoldItem, error) {
 	}
 
 	soldItems := make([]SoldItem, 0, len(result.ItemSummaries))
+	now := time.Now().UTC()
 	for _, item := range result.ItemSummaries {
 		if item.ItemEndDate == "" {
 			continue
 		}
 
+		// Ensure the listing has actually ended.
+		endTime, err := time.Parse(time.RFC3339, item.ItemEndDate)
+		if err != nil {
+			continue
+		}
+		if endTime.After(now) {
+			continue
+		}
+
+		// Keep auction sold entries only.
+		isAuction := false
+		for _, opt := range item.BuyingOptions {
+			if strings.EqualFold(opt, "AUCTION") {
+				isAuction = true
+				break
+			}
+		}
+		if !isAuction {
+			continue
+		}
+
+		priceValue := strings.TrimSpace(item.Price.Value)
+		priceCurrency := strings.TrimSpace(item.Price.Currency)
+		if priceValue == "" {
+			priceValue = strings.TrimSpace(item.CurrentBidPrice.Value)
+			priceCurrency = strings.TrimSpace(item.CurrentBidPrice.Currency)
+		}
+		if priceValue == "" {
+			continue
+		}
+		itemWebURL := strings.TrimSpace(item.ItemWebUrl)
+		if itemWebURL == "" && strings.TrimSpace(item.ItemID) != "" {
+			itemWebURL = "https://www.ebay.com/itm/" + strings.TrimSpace(item.ItemID)
+		}
+
 		soldItems = append(soldItems, SoldItem{
 			ItemID:      item.ItemID,
 			Title:       item.Title,
-			Price:       item.Price.Value,
-			Currency:    item.Price.Currency,
+			Price:       priceValue,
+			Currency:    priceCurrency,
 			ImageURL:    item.Image.ImageUrl,
-			ItemWebURL:  item.ItemWebUrl,
+			ItemWebURL:  itemWebURL,
 			ItemEndDate: item.ItemEndDate,
 		})
 	}

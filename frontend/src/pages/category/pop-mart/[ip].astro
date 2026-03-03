@@ -1,0 +1,207 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { POPMART_IPS, findPopmartIPBySlug } from '../../../lib/popmartIps';
+
+type SeriesCard = {
+  series: string;
+  imageUrl: string;
+  count: number;
+  samplePrice?: string;
+  href: string;
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) {
+    return '--';
+  }
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const ip = findPopmartIPBySlug(Astro.params.ip ?? '') ?? POPMART_IPS[0];
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+
+let seriesCards: SeriesCard[] = [];
+try {
+  const res = await fetch(`${apiBaseUrl}/category/pop-mart/${ip.slug}`);
+  const payload = await res.json();
+  const cards = Array.isArray(payload?.result?.cards) ? payload.result.cards : [];
+  seriesCards = cards.map((card: any) => ({
+    series: card.series ?? 'Other Series',
+    imageUrl: card.imageUrl || ip.imageUrl,
+    count: Number(card.count ?? 0),
+    samplePrice: card.samplePrice ?? '',
+    href: card.href || `/category/pop-mart/${ip.slug}`,
+  }));
+} catch (_) {
+  seriesCards = [];
+}
+
+const fallbackSeriesCards: SeriesCard[] = [
+  {
+    series: 'All Series',
+    imageUrl: ip.imageUrl,
+    count: 0,
+    href: `/category/pop-mart/${ip.slug}/all-series`,
+  },
+];
+
+const cardsToRender = seriesCards.length > 0 ? seriesCards : fallbackSeriesCards;
+
+export function getStaticPaths() {
+  return POPMART_IPS.map((entry) => ({ params: { ip: entry.slug } }));
+}
+---
+
+<Layout title={`${ip.name} Series`}>
+  <div class="container page-layout">
+    <div class="breadcrumbs slide-up">
+      <a href="/brands">Brands</a>
+      <span class="separator">/</span>
+      <a href="/category/pop-mart">Pop Mart</a>
+      <span class="separator">/</span>
+      <span class="current">{ip.name}</span>
+    </div>
+
+    <section class="series-grid fade-in">
+      {
+        cardsToRender.map((card) => (
+          <a class="series-card glass-panel" href={card.href}>
+            <div class="series-image-wrap">
+              <img src={card.imageUrl || ip.imageUrl} alt={card.series} class="series-image" loading="lazy" />
+            </div>
+            <h2>{card.series}</h2>
+            <p class="series-meta">{card.count} sold listings found</p>
+            <p class="series-price">
+              Sample price: {formatUsd(card.samplePrice)}
+            </p>
+            <span class="card-action">View sold market -></span>
+          </a>
+        ))
+      }
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .page-layout {
+    padding-top: 2rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--brand-primary);
+  }
+
+  .separator {
+    color: var(--border-color);
+  }
+
+  .current {
+    color: var(--text-primary);
+  }
+
+  .page-title {
+    margin-top: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .page-subtitle {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+  }
+
+  .series-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .series-card {
+    display: block;
+    padding: 0.65rem;
+    border-radius: 10px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .series-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .series-image-wrap {
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 0.7rem;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .series-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .series-card h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.15rem;
+  }
+
+  .series-meta {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .series-price {
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+  }
+
+  .card-action {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    font-size: 0.76rem;
+  }
+
+  @media (max-width: 1200px) {
+    .series-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .series-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .series-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .series-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+

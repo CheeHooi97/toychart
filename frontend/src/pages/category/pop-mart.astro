@@ -1,0 +1,188 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { POPMART_IPS } from '../../lib/popmartIps';
+
+const ipHref = (slug: string) => `/category/pop-mart/${slug}`;
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+
+type PopmartCategoryItem = {
+  slug: string;
+  name: string;
+  description: string;
+  keyword: string;
+  imageUrl: string;
+  soldCount?: number;
+};
+
+let popmartIpsWithImages: PopmartCategoryItem[] = POPMART_IPS.map((ip) => ({ ...ip }));
+try {
+  const res = await fetch(`${apiBaseUrl}/category/pop-mart`);
+  const payload = await res.json();
+  const items: PopmartCategoryItem[] = Array.isArray(payload?.result) ? payload.result : [];
+  if (items.length > 0) {
+    popmartIpsWithImages = items;
+  }
+} catch (_) {
+  popmartIpsWithImages = POPMART_IPS.map((ip) => ({ ...ip }));
+}
+---
+
+<Layout title="Pop Mart Categories">
+  <div class="container page-layout">
+    <div class="breadcrumbs slide-up">
+      <a href="/brands">Brands</a>
+      <span class="separator">/</span>
+      <span class="current">Pop Mart</span>
+    </div>
+
+    <header class="page-header slide-up">
+      <h1 class="page-title">Pop Mart</h1>
+      <p class="page-subtitle">
+        Explore Pop Mart IPs and open each IP's series market.
+      </p>
+    </header>
+
+    <section class="ip-grid fade-in">
+      {
+        popmartIpsWithImages.map((ip) => (
+          <a class="ip-card glass-panel" href={ipHref(ip.slug)}>
+            <div class="ip-image-wrap">
+              <img src={ip.imageUrl} alt={ip.name} class="ip-image" loading="lazy" />
+            </div>
+            <h2>{ip.name}</h2>
+            <p>{ip.description}</p>
+            <span class="card-action">View -></span>
+          </a>
+        ))
+      }
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .page-layout {
+    padding-top: 2rem;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--brand-primary);
+  }
+
+  .separator {
+    color: var(--border-color);
+  }
+
+  .current {
+    color: var(--text-primary);
+  }
+
+  .page-title {
+    margin-top: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .page-subtitle {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+    max-width: 680px;
+  }
+
+  .ip-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .ip-card {
+    display: block;
+    padding: 0.65rem;
+    border-radius: 10px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .ip-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .ip-image-wrap {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    aspect-ratio: 1 / 1;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .ip-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ip-card h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+    color: var(--text-primary);
+  }
+
+  .ip-card p {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    min-height: 2.4rem;
+  }
+
+  .card-action {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    font-size: 0.76rem;
+  }
+
+  @media (max-width: 1400px) {
+    .ip-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .ip-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .ip-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 800px) {
+    .ip-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .ip-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
