@@ -1,0 +1,143 @@
+---
+import Layout from '../../../../../../layouts/Layout.astro';
+
+type SoldItem = {
+  title: string;
+  price: string;
+  itemWebUrl: string;
+  caption: string;
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return '--';
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const toTitle = (slug: string) =>
+  slug
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const ip = Astro.params.ip ?? 'labubu';
+const seriesSlug = Astro.params.series ?? '';
+const itemSlug = Astro.params.item ?? '';
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+
+let itemTitle = toTitle(itemSlug);
+let seriesTitle = toTitle(seriesSlug);
+const keyword = `${ip} ${itemTitle}`;
+
+let allSales: SoldItem[] = [];
+try {
+  const seriesRes = await fetch(`${apiBaseUrl}/category/pop-mart/${ip}/${seriesSlug}`);
+  const seriesPayload = await seriesRes.json();
+  const result = seriesPayload?.result;
+  if (result?.series) seriesTitle = result.series;
+  const items = Array.isArray(result?.items) ? result.items : [];
+  const matched = items.find((entry: any) => {
+    const t = String(entry?.title ?? '').toLowerCase();
+    return t.includes(itemTitle.toLowerCase()) || t.replace(/\([^)]*\)/g, '').trim() === itemTitle.toLowerCase();
+  });
+  if (matched?.title) itemTitle = matched.title;
+} catch (_) {
+  // fallback only
+}
+
+try {
+  const res = await fetch(`${apiBaseUrl}/ebay/search/sold/scrape`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ keyword, maxPages: 5 }),
+  });
+  const payload = await res.json();
+  allSales = Array.isArray(payload?.result) ? payload.result : [];
+} catch (_) {
+  allSales = [];
+}
+
+const itemHref = `/category/pop-mart/${ip}/${seriesSlug}/${itemSlug}`;
+
+export function getStaticPaths() {
+  const macaronItems = [
+    'soymilk',
+    'lychee-berry',
+    'green-grape',
+    'sea-salt-coconut',
+    'toffee',
+    'sesame-bean',
+    'chestnut-cocoa',
+  ];
+  return macaronItems.map((slug) => ({
+    params: { ip: 'labubu', series: 'labubu-exciting-macaron', item: slug },
+  }));
+}
+---
+
+<Layout title={`${itemTitle} | Sales History`}>
+  <div class="container page-layout">
+    <div class="page-header slide-up">
+      <div>
+        <a href={itemHref} class="back-link"><- Back to Item</a>
+        <h1 class="page-title">{itemTitle}</h1>
+        <p class="page-subtitle">{seriesTitle} · {allSales.length} sold results</p>
+      </div>
+    </div>
+
+    <section class="sales-history fade-in">
+      <div class="table-container glass-panel">
+        <table class="sales-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Title</th>
+              <th>Price</th>
+              <th>URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              allSales.length > 0 ? (
+                allSales.map((sale, index) => (
+                  <tr>
+                    <td>{index + 1}</td>
+                    <td>{sale.caption?.trim() || '--'}</td>
+                    <td class="sale-title">{sale.title || '--'}</td>
+                    <td class="font-bold">{formatUsd(sale.price)}</td>
+                    <td>
+                      {sale.itemWebUrl ? (
+                        <a href={sale.itemWebUrl} target="_blank" rel="noopener noreferrer" class="sale-link">View</a>
+                      ) : (
+                        '--'
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colspan="5" class="empty-cell">No sold history found for this keyword.</td></tr>
+              )
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .page-layout { padding-top: 2rem; }
+  .page-header { margin-bottom: 1.5rem; }
+  .back-link { color: var(--brand-primary); font-weight: 600; font-size: 0.9rem; }
+  .page-title { margin-top: 0.5rem; font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; }
+  .page-subtitle { margin-top: 0.25rem; color: var(--text-secondary); }
+  .table-container { overflow-x: auto; }
+  .sales-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .sales-table th { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; padding: 1rem; border-bottom: 1px solid var(--border-color); }
+  .sales-table td { padding: 0.9rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: top; }
+  .sale-title { max-width: 540px; }
+  .font-bold { font-weight: 700; font-family: 'Outfit', sans-serif; }
+  .sale-link { color: var(--brand-primary); font-weight: 600; }
+  .empty-cell { text-align: center; color: var(--text-secondary); padding: 1.25rem; }
+</style>
+

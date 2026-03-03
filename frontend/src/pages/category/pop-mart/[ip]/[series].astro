@@ -1,0 +1,390 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import {
+  POPMART_SERIES,
+  seriesToSlug,
+} from '../../../../lib/popmartSeries';
+import { POPMART_IPS, findPopmartIPBySlug } from '../../../../lib/popmartIps';
+
+type SeriesItemCard = {
+  title: string;
+  imageUrl: string;
+  avgPrice: string;
+  soldCount: number;
+  href: string;
+};
+
+const toItemSlug = (title: string) => {
+  const normalized = title.trim().toLowerCase();
+  if (normalized === 'chestnut cocoa (secret)') {
+    return 'chestnut-cocoa';
+  }
+  return normalized
+    .replace(/\([^)]*\)/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const formatUsd = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) {
+    return '--';
+  }
+  return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const ip = findPopmartIPBySlug(Astro.params.ip ?? '') ?? POPMART_IPS[0];
+const seriesParam = Astro.params.series ?? '';
+const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
+let displaySeries =
+  seriesParam
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase()) || 'Series';
+let itemCards: SeriesItemCard[] = [];
+try {
+  const res = await fetch(`${apiBaseUrl}/category/pop-mart/${ip.slug}/${seriesParam}`);
+  const payload = await res.json();
+  const result = payload?.result;
+  if (result?.series) {
+    displaySeries = result.series;
+  }
+  const items = Array.isArray(result?.items) ? result.items : [];
+  itemCards = items.map((item: any) => ({
+    title: item.title ?? '',
+    imageUrl: item.imageUrl || ip.imageUrl,
+    avgPrice: formatUsd(item.avgPrice),
+    soldCount: Number(item.soldCount ?? 0),
+    href:
+      (typeof item.href === 'string' && item.href.trim()) ||
+      `/category/pop-mart/${ip.slug}/${seriesParam}/${toItemSlug(item.title ?? '')}`,
+  }));
+} catch (_) {
+  itemCards = [];
+}
+
+export function getStaticPaths() {
+  const baseSeries = ['all-series', ...POPMART_SERIES.map((name) => seriesToSlug(name))];
+  return POPMART_IPS.flatMap((entry) =>
+    [...baseSeries, ...(entry.slug === 'labubu' ? ['labubu-exciting-macaron'] : [])].map((series) => ({
+      params: { ip: entry.slug, series },
+    })),
+  );
+}
+---
+
+<Layout title={`${ip.name} ${displaySeries} Items`}>
+  <div class="container page-layout">
+    <div class="breadcrumbs slide-up">
+      <a href="/brands">Brands</a>
+      <span class="separator">/</span>
+      <a href="/category/pop-mart">Pop Mart</a>
+      <span class="separator">/</span>
+      <a href={`/category/pop-mart/${ip.slug}`}>{ip.name}</a>
+      <span class="separator">/</span>
+      <span class="current">{displaySeries}</span>
+    </div>
+    <div class="toolbar slide-up">
+      <p class="series-summary">{itemCards.length} items in this series</p>
+      <div class="view-icons" role="group" aria-label="View mode">
+        <button id="view-grid" class="view-btn active" type="button" aria-label="Grid view" title="Grid view">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+        <button id="view-list" class="view-btn" type="button" aria-label="List view" title="List view">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <line x1="5" y1="7" x2="21" y2="7"></line>
+            <line x1="5" y1="12" x2="21" y2="12"></line>
+            <line x1="5" y1="17" x2="21" y2="17"></line>
+            <circle cx="3" cy="7" r="1"></circle>
+            <circle cx="3" cy="12" r="1"></circle>
+            <circle cx="3" cy="17" r="1"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <section id="series-items" class="item-grid fade-in" data-view="grid">
+      {
+        itemCards.length > 0 ? (
+          itemCards.map((item) => (
+            <a class="item-card glass-panel" href={item.href}>
+              <div class="item-image-wrap">
+                <img src={item.imageUrl || ip.imageUrl} alt={item.title} class="item-image" loading="lazy" />
+              </div>
+              <div class="item-content">
+                <h2>{item.title}</h2>
+                <p class="item-meta">{item.soldCount} sold listings</p>
+              </div>
+              <div class="item-side">
+                <p class="item-price">Avg price: {item.avgPrice}</p>
+                <span class="card-action">View -></span>
+              </div>
+            </a>
+          ))
+        ) : (
+          <div class="empty glass-panel">
+            <p>No sold listings found for this series yet.</p>
+          </div>
+        )
+      }
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .page-layout {
+    padding-top: 2rem;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+  }
+
+  .breadcrumbs a:hover {
+    color: var(--brand-primary);
+  }
+
+  .separator {
+    color: var(--border-color);
+  }
+
+  .current {
+    color: var(--text-primary);
+  }
+
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .series-summary {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+  }
+
+  .view-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .view-btn {
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    width: 34px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .view-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .view-btn.active {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: var(--text-primary);
+  }
+
+  .item-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0.65rem;
+    border-radius: 10px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .item-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .item-image-wrap {
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    margin-bottom: 0.7rem;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .item-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .item-card h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.15rem;
+  }
+
+  .item-content {
+    min-width: 0;
+  }
+
+  .item-side {
+    margin-top: 0.3rem;
+  }
+
+  #series-items[data-view='list'] {
+    grid-template-columns: 1fr;
+  }
+
+  #series-items[data-view='list'] .item-card {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.75rem;
+  }
+
+  #series-items[data-view='list'] .item-image-wrap {
+    width: 88px;
+    height: 88px;
+    margin-bottom: 0;
+  }
+
+  #series-items[data-view='list'] .item-side {
+    margin-top: 0;
+    text-align: right;
+  }
+
+  #series-items[data-view='list'] .item-price {
+    margin-bottom: 0.2rem;
+  }
+
+  #series-items[data-view='list'] .card-action {
+    margin-top: 0;
+  }
+
+  .item-meta {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .item-price {
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+  }
+
+  .card-action {
+    display: inline-block;
+    margin-top: 0.45rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    font-size: 0.76rem;
+  }
+
+  .empty {
+    padding: 1rem;
+    grid-column: 1 / -1;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  @media (max-width: 1200px) {
+    .item-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .item-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .item-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .item-grid {
+      grid-template-columns: 1fr;
+    }
+
+    #series-items[data-view='list'] .item-card {
+      grid-template-columns: 72px minmax(0, 1fr);
+    }
+
+    #series-items[data-view='list'] .item-image-wrap {
+      width: 72px;
+      height: 72px;
+    }
+
+    #series-items[data-view='list'] .item-side {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      margin-top: 0.15rem;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const setupToggle = () => {
+      const grid = document.getElementById('view-grid');
+      const list = document.getElementById('view-list');
+      const container = document.getElementById('series-items');
+      if (!grid || !list || !container) return;
+
+      const key = `popmart-view:${window.location.pathname}`;
+      const setView = (view) => {
+        const mode = view === 'list' ? 'list' : 'grid';
+        container.setAttribute('data-view', mode);
+        grid.classList.toggle('active', mode === 'grid');
+        list.classList.toggle('active', mode === 'list');
+        window.localStorage.setItem(key, mode);
+      };
+
+      setView(window.localStorage.getItem(key) || 'grid');
+      grid.onclick = () => setView('grid');
+      list.onclick = () => setView('list');
+    };
+
+    setupToggle();
+    document.addEventListener('astro:page-load', setupToggle);
+  })();
+</script>
