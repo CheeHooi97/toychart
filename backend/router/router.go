@@ -63,11 +63,19 @@ func SetupRoutes(h *handler.Handler, db *gorm.DB) *echo.Echo {
 	user1.GET("", h.GetUser)
 	user1.POST("", h.CreateUser)
 	e.GET("/category/pop-mart", h.PopmartCategory)
-	e.GET("/category/pop-mart/:ip", h.PopmartIPSeries)
-	e.GET("/category/pop-mart/:ip/:series", h.PopmartSeriesItems)
-	e.GET("/category/pop-mart/:ip/:series/:item", h.PopmartSeriesItem)
 	e.POST("/ebay/search/sold", h.EbaySoldSearch)
 	e.POST("/ebay/search/sold/scrape", h.EbaySoldScrape)
+
+	ip := e.Group("/ip")
+	ip.GET("/type/list", h.IPTypeList)
+	ip.GET("/list", h.IPList)
+
+	set := e.Group("/set")
+	set.POST("/create", h.CreateSet)
+	set.GET("/list", h.SetList)
+
+	series := e.Group("/series")
+	series.GET("/list", h.SeriesList)
 
 	v := e.Group("/v1", appMiddleware.Authenticated(extractToken, h.VerifyToken))
 

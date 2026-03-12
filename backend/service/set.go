@@ -21,6 +21,14 @@ func (s *SetService) GetById(id string) (*model.Set, error) {
 	return s.setRepo.GetById(id)
 }
 
+func (s *SetService) GetBySeries(series string) ([]*model.Set, error) {
+	return s.setRepo.GetBySeries(series)
+}
+
+func (s *SetService) GetSeriesByIPName(set string) ([]*model.Set, error) {
+	return s.setRepo.GetSeriesByIPName(set)
+}
+
 func (s *SetService) Update(set *model.Set) error {
 	return s.setRepo.Update(set)
 }

@@ -68,9 +68,15 @@ export function getStaticPaths() {
     'sesame-bean',
     'chestnut-cocoa',
   ];
-  return macaronItems.map((slug) => ({
-    params: { ip: 'labubu', series: 'labubu-exciting-macaron', item: slug },
-  }));
+  const haveASeatItems = ['baba', 'sisi', 'ququ', 'dada', 'zizi', 'hehe', 'duoduo'];
+  return [
+    ...macaronItems.map((slug) => ({
+      params: { ip: 'labubu', series: 'labubu-exciting-macaron', item: slug },
+    })),
+    ...haveASeatItems.map((slug) => ({
+      params: { ip: 'labubu', series: 'the-monsters-have-a-seat-series', item: slug },
+    })),
+  ];
 }
 ---
 
@@ -80,7 +86,7 @@ export function getStaticPaths() {
       <div>
         <a href={itemHref} class="back-link"><- Back to Item</a>
         <h1 class="page-title">{itemTitle}</h1>
-        <p class="page-subtitle">{seriesTitle} · {allSales.length} sold results</p>
+        <p class="page-subtitle">{seriesTitle} - {allSales.length} sold results</p>
       </div>
     </div>
 
@@ -140,4 +146,3 @@ export function getStaticPaths() {
   .sale-link { color: var(--brand-primary); font-weight: 600; }
   .empty-cell { text-align: center; color: var(--text-secondary); padding: 1.25rem; }
 </style>
-

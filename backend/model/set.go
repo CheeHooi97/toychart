@@ -6,10 +6,17 @@ import (
 )
 
 type Set struct {
-	Id       string `gorm:"type:varchar(36);primaryKey" json:"id"`
-	SetName  string `gorm:"type:varchar(255)" json:"setName"`
-	Series   string `gorm:"type:varchar(255)" json:"series"`
-	PhotoUrl string `gorm:"type:text" json:"photoUrl"`
+	Id         string `gorm:"type:varchar(36);primaryKey" json:"id"`
+	IPType     string `gorm:"type:varchar(64);index" json:"ipType"`  //popmart, funco etc
+	IPName     string `gorm:"type:varchar(128)" json:"ipName"`       // popmart: labubu, skullpanda etc
+	Series     string `gorm:"type:varchar(255);index" json:"series"` // labubu: why-so-serious-series etc
+	PhotoUrl   string `gorm:"type:text" json:"photoUrl"`
+	ItemName   string `gorm:"type:varchar(255)" json:"itemName"`
+	Rarity     string `gorm:"type:varchar(64)" json:"rarity"`
+	AvgPrice   string `gorm:"type:varchar(64)" json:"avgPrice"`
+	SoldCount  int    `gorm:"type:int;default:0" json:"soldCount"`
+	LastSoldAt string `gorm:"type:varchar(64)" json:"lastSoldAt"`
+	Href       string `gorm:"type:text" json:"href"`
 	BaseModel
 }
 

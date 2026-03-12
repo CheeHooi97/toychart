@@ -6,6 +6,7 @@ type SeriesCard = {
   series: string;
   imageUrl: string;
   count: number;
+  itemCount: number;
   samplePrice?: string;
   href: string;
 };
@@ -30,6 +31,7 @@ try {
     series: card.series ?? 'Other Series',
     imageUrl: card.imageUrl || ip.imageUrl,
     count: Number(card.count ?? 0),
+    itemCount: Number(card.itemCount ?? 0),
     samplePrice: card.samplePrice ?? '',
     href: card.href || `/category/pop-mart/${ip.slug}`,
   }));
@@ -42,6 +44,7 @@ const fallbackSeriesCards: SeriesCard[] = [
     series: 'All Series',
     imageUrl: ip.imageUrl,
     count: 0,
+    itemCount: 0,
     href: `/category/pop-mart/${ip.slug}/all-series`,
   },
 ];
@@ -71,9 +74,9 @@ export function getStaticPaths() {
               <img src={card.imageUrl || ip.imageUrl} alt={card.series} class="series-image" loading="lazy" />
             </div>
             <h2>{card.series}</h2>
-            <p class="series-meta">{card.count} sold listings found</p>
+            <p class="series-meta">{card.itemCount} items in series</p>
             <p class="series-price">
-              Sample price: {formatUsd(card.samplePrice)}
+              {card.count} sold listings found - Sample price: {formatUsd(card.samplePrice)}
             </p>
             <span class="card-action">View sold market -></span>
           </a>

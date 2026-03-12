@@ -6,6 +6,7 @@ import (
 	"toychart/service"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -15,9 +16,10 @@ type Handler struct {
 	Set        *service.SetService
 	User       *service.UserService
 	UserDevice *service.UserDeviceService
+	DB         *gorm.DB
 }
 
-func NewHandler(services *service.Services) *Handler {
+func NewHandler(services *service.Services, db *gorm.DB) *Handler {
 	h := &Handler{
 
 		Token:      services.TokenService,
@@ -26,6 +28,7 @@ func NewHandler(services *service.Services) *Handler {
 		Set:        services.SetService,
 		User:       services.UserService,
 		UserDevice: services.UserDeviceService,
+		DB:         db,
 	}
 
 	return h

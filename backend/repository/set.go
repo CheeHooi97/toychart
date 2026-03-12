@@ -10,6 +10,8 @@ import (
 type SetRepository interface {
 	Create(set *model.Set) error
 	GetById(id string) (*model.Set, error)
+	GetBySeries(series string) ([]*model.Set, error)
+	GetSeriesByIPName(set string) ([]*model.Set, error)
 	Update(set *model.Set) error
 	Delete(id string) error
 }
@@ -39,6 +41,28 @@ func (r *setRepository) GetById(id string) (*model.Set, error) {
 		}
 	}
 	return &set, nil
+}
+
+func (r *setRepository) GetBySeries(series string) ([]*model.Set, error) {
+	var sets []*model.Set
+	result := r.db.Where("series = ?", series).Find(&sets)
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, result.Error
+		}
+	}
+	return sets, nil
+}
+
+func (r *setRepository) GetSeriesByIPName(set string) ([]*model.Set, error) {
+	var sets []*model.Set
+	result := r.db.Where("ip_name = ?", set).Find(&sets)
+	if result.Error != nil {
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, result.Error
+		}
+	}
+	return sets, nil
 }
 
 func (r *setRepository) Update(set *model.Set) error {

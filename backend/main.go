@@ -55,7 +55,7 @@ func main() {
 	// Init layers
 	repos := repository.InitializeRepository(db)
 	services := service.InitializeService(repos)
-	h := handler.NewHandler(services)
+	h := handler.NewHandler(services, db)
 
 	api := router.SetupRoutes(h, db)
 

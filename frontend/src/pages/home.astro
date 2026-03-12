@@ -1,12 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Search from '../components/ui/Search.astro';
-import { classifyPopmartSeries, sanitizePopmartTitle } from '../lib/popmartSeries';
+import { POPMART_SERIES, classifyPopmartSeries, sanitizePopmartTitle } from '../lib/popmartSeries';
 
-type EbaySoldItem = {
-  title: string;
+type PopmartHotApiItem = {
+  item: string;
+  series: string;
   price: string;
-  caption: string;
+  soldAt: string;
+  href?: string;
 };
 
 type PopMartRow = {
@@ -23,6 +25,168 @@ const formatUsd = (value?: string) => {
     return '--';
   }
   return trimmed.startsWith('$') ? trimmed : `$${trimmed}`;
+};
+
+const formatSoldAt = (value?: string) => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) {
+    return '--';
+  }
+  const cleaned = trimmed.replace(/^Sold\s+/i, '').replace(/\s+/g, ' ');
+  const dateMatch = cleaned.match(/^([A-Za-z]{3})\s+(\d{1,2}),?\s*(\d{4})$/);
+  if (dateMatch) {
+    const [, month, day, year] = dateMatch;
+    return `${month} ${day.padStart(2, '0')} ${year}`;
+  }
+  return cleaned;
+};
+
+const splitSoldAt = (value: string) => {
+  const dateMatch = value.match(/^([A-Za-z]{3}\s+\d{2})\s+(\d{4})$/);
+  if (!dateMatch) {
+    return null;
+  }
+  return { top: dateMatch[1], year: dateMatch[2] };
+};
+
+const popmartIpLabels: Record<string, string> = {
+  labubu: 'labubu',
+  skullpanda: 'skullpanda',
+  dimoo: 'dimoo',
+  hirono: 'hirono',
+  molly: 'molly',
+  crybaby: 'crybaby',
+  pucky: 'pucky',
+  hacipupu: 'hacipupu',
+};
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const normalizeToken = (value: string) =>
+  sanitizePopmartTitle(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const detectPopmartIpSlug = (title: string) => {
+  const normalized = normalizeToken(title);
+  if (normalized.includes('skullpanda')) return 'skullpanda';
+  if (normalized.includes('dimoo')) return 'dimoo';
+  if (normalized.includes('hirono')) return 'hirono';
+  if (normalized.includes('molly')) return 'molly';
+  if (normalized.includes('crybaby')) return 'crybaby';
+  if (normalized.includes('pucky')) return 'pucky';
+  if (normalized.includes('hacipupu')) return 'hacipupu';
+  return 'labubu';
+};
+
+const matchExcitingMacaronName = (rawTitle: string) => {
+  const title = normalizeToken(rawTitle);
+  if (!title) return '';
+  if (title.includes('chestnut cocoa')) return 'Chestnut Cocoa (Secret)';
+  if (title.includes('lychee berry')) return 'Lychee Berry';
+  if (title.includes('green grape')) return 'Green Grape';
+  if (title.includes('sea salt coconut') || title.includes('sea salt')) return 'Sea Salt Coconut';
+  if (title.includes('toffee')) return 'Toffee';
+  if (title.includes('sesame bean') || title.includes('sesame')) return 'Sesame Bean';
+  if (title.includes('soymilk') || title.includes('soy milk')) return 'Soymilk';
+  return '';
+};
+
+const matchHaveASeatName = (rawTitle: string) => {
+  const title = normalizeToken(rawTitle);
+  if (!title) return '';
+  if (title.includes('duoduo') || title.includes('duo duo')) return 'Duoduo (Secret)';
+  if (title.includes('baba')) return 'Baba';
+  if (title.includes('sisi')) return 'Sisi';
+  if (title.includes('ququ')) return 'Ququ';
+  if (title.includes('dada')) return 'Dada';
+  if (title.includes('zizi')) return 'Zizi';
+  if (title.includes('hehe')) return 'Hehe';
+  return '';
+};
+
+const compactPopmartItemTitle = (rawTitle: string, ipSlug: string, series: string) => {
+  if (series === 'THE MONSTERS - Exciting Macaron Vinyl Face') {
+    return matchExcitingMacaronName(rawTitle) || '';
+  }
+  if (series === 'THE MONSTERS - Have a Seat Series') {
+    return matchHaveASeatName(rawTitle) || '';
+  }
+
+  let cleaned = sanitizePopmartTitle(rawTitle);
+  cleaned = cleaned.replace(/\bpop\s*mart\b/gi, '');
+  cleaned = cleaned.replace(/\bthe\s+monsters\b/gi, 'THE MONSTERS');
+  cleaned = cleaned.replace(/\blabubu\b/gi, '');
+  cleaned = cleaned.replace(/\b(authentic|official|genuine|new|sealed|in\s*hand|instock|open\s*box|opened|us\s*seller|free\s*shipping|blind\s*box|figure|vinyl|plush|pendant|toy|collectible)\b/gi, '');
+  cleaned = cleaned.replace(/-/g, ' ');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  const ipName = popmartIpLabels[ipSlug] ?? ipSlug;
+  if (ipName) {
+    cleaned = cleaned.replace(new RegExp(`\\b${escapeRegExp(ipName)}\\b`, 'gi'), '');
+  }
+  if (series) {
+    cleaned = cleaned.replace(new RegExp(`\\b${escapeRegExp(series)}\\b`, 'gi'), '');
+  }
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned;
+};
+
+const popmartItemSlug = (series: string, title: string) => {
+  if (series === 'THE MONSTERS - Exciting Macaron Vinyl Face') {
+    const matched = title || matchExcitingMacaronName(title);
+    const mapped: Record<string, string> = {
+      Soymilk: 'soymilk',
+      'Lychee Berry': 'lychee-berry',
+      'Green Grape': 'green-grape',
+      'Sea Salt Coconut': 'sea-salt-coconut',
+      Toffee: 'toffee',
+      'Sesame Bean': 'sesame-bean',
+      'Chestnut Cocoa (Secret)': 'chestnut-cocoa',
+    };
+    if (mapped[matched]) return mapped[matched];
+  }
+  if (series === 'THE MONSTERS - Have a Seat Series') {
+    const matched = title || matchHaveASeatName(title);
+    const mapped: Record<string, string> = {
+      Baba: 'baba',
+      Sisi: 'sisi',
+      Ququ: 'ququ',
+      Dada: 'dada',
+      Zizi: 'zizi',
+      Hehe: 'hehe',
+      'Duoduo (Secret)': 'duoduo',
+    };
+    if (mapped[matched]) return mapped[matched];
+  }
+  return title
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const popmartSeriesSlug = (series: string) => {
+  if (series.toLowerCase().includes('exciting macaron')) {
+    return 'labubu-exciting-macaron';
+  }
+  return series
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const toPopmartItemHref = (rawTitle: string, seriesOverride?: string) => {
+  const safeTitle = sanitizePopmartTitle(rawTitle);
+  const series = seriesOverride || classifyPopmartSeries(safeTitle);
+  const ip = detectPopmartIpSlug(safeTitle);
+  const compactTitle = compactPopmartItemTitle(safeTitle, ip, series) || safeTitle;
+  const item = popmartItemSlug(series, compactTitle);
+  const seriesSlug = POPMART_SERIES.includes(series) ? popmartSeriesSlug(series) : 'all-series';
+  return `/category/pop-mart/${ip}/${seriesSlug}/${item}`;
 };
 
 const topGaining = [
@@ -65,38 +229,31 @@ const topGaining = [
 
 const apiBaseUrl = import.meta.env.TOYCHART_API_URL ?? 'http://localhost:8080';
 
-const toItemHref = (title: string) =>
-  `/item/lb-macaron-secret?keyword=${encodeURIComponent(title)}&title=${encodeURIComponent(title)}&series=${encodeURIComponent(classifyPopmartSeries(title))}`;
-
 const popMartFallback: PopMartRow[] = [
-  { item: 'Labubu Sea Salt Coconut', series: 'Exciting Macaron', price: '$32.00', soldAt: '--', href: toItemHref('Labubu Sea Salt Coconut') },
-  { item: 'Skullpanda The Warmth', series: 'Image of Reality', price: '$28.00', soldAt: '--', href: toItemHref('Skullpanda The Warmth') },
-  { item: 'Hirono The Crow', series: 'City of Mercy', price: '$25.00', soldAt: '--', href: toItemHref('Hirono The Crow') },
-  { item: 'Labubu Lychee Berry', series: 'Exciting Macaron', price: '$38.00', soldAt: '--', href: toItemHref('Labubu Lychee Berry') },
-  { item: 'Dimoo Rose Knight', series: 'Dating Series', price: '$22.00', soldAt: '--', href: toItemHref('Dimoo Rose Knight') },
+  { item: 'Labubu Sea Salt Coconut', series: 'Exciting Macaron', price: '$32.00', soldAt: '--', href: toPopmartItemHref('Labubu Sea Salt Coconut') },
+  { item: 'Skullpanda The Warmth', series: 'Image of Reality', price: '$28.00', soldAt: '--', href: toPopmartItemHref('Skullpanda The Warmth') },
+  { item: 'Hirono The Crow', series: 'City of Mercy', price: '$25.00', soldAt: '--', href: toPopmartItemHref('Hirono The Crow') },
+  { item: 'Labubu Lychee Berry', series: 'Exciting Macaron', price: '$38.00', soldAt: '--', href: toPopmartItemHref('Labubu Lychee Berry') },
+  { item: 'Dimoo Rose Knight', series: 'Dating Series', price: '$22.00', soldAt: '--', href: toPopmartItemHref('Dimoo Rose Knight') },
 ];
 
 let popMartHot: PopMartRow[] = popMartFallback;
 
 try {
-  const res = await fetch(`${apiBaseUrl}/ebay/search/sold/scrape`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ keyword: 'pop mart labubu', maxPages: 2 }),
-  });
+  const res = await fetch(`${apiBaseUrl}/category/pop-mart/labubu/hot?limit=5`);
 
   const payload = await res.json();
-  const soldItems: EbaySoldItem[] = Array.isArray(payload?.result)
+  const soldItems: PopmartHotApiItem[] = Array.isArray(payload?.result)
     ? payload.result
     : [];
 
   if (soldItems.length > 0) {
-    popMartHot = soldItems.slice(0, 5).map((row) => ({
-      item: sanitizePopmartTitle(row.title),
-      series: classifyPopmartSeries(row.title),
+    popMartHot = soldItems.map((row) => ({
+      item: sanitizePopmartTitle(row.item),
+      series: row.series || classifyPopmartSeries(row.item),
       price: formatUsd(row.price),
-      soldAt: row.caption?.trim() || '--',
-      href: toItemHref(sanitizePopmartTitle(row.title)),
+      soldAt: formatSoldAt(row.soldAt),
+      href: row.href || toPopmartItemHref(row.item, row.series),
     }));
   }
 } catch (_) {
@@ -201,18 +358,30 @@ const funkoHot = [
             </thead>
             <tbody>
               {
-                popMartHot.map((row) => (
-                  <tr>
-                    <td>
-                      <a href={row.href} class="item-link">
-                        <span class="item-name">{row.item}</span>
-                        <span class="item-meta">{row.series}</span>
-                      </a>
-                    </td>
-                    <td class="right font-bold">{row.price}</td>
-                    <td class="right text-secondary">{row.soldAt}</td>
-                  </tr>
-                ))
+                popMartHot.map((row) => {
+                  const soldAt = splitSoldAt(row.soldAt);
+                  return (
+                    <tr>
+                      <td>
+                        <a href={row.href} class="item-link">
+                          <span class="item-name">{row.item}</span>
+                          <span class="item-meta">{row.series}</span>
+                        </a>
+                      </td>
+                      <td class="right font-bold">{row.price}</td>
+                      <td class="right text-secondary sold-at-cell">
+                        {soldAt ? (
+                          <>
+                            <span class="sold-at-top">{soldAt.top}</span>
+                            <span class="sold-at-year">{soldAt.year}</span>
+                          </>
+                        ) : (
+                          row.soldAt
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               }
             </tbody>
           </table>
@@ -422,6 +591,22 @@ const funkoHot = [
 
   .item-meta {
     font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .sold-at-cell {
+    white-space: nowrap;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sold-at-top,
+  .sold-at-year {
+    display: block;
+  }
+
+  .sold-at-year {
+    font-size: inherit;
     color: var(--text-tertiary);
   }
 
