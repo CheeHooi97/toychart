@@ -10,25 +10,31 @@ import (
 )
 
 type Handler struct {
-	Token      *service.TokenService
-	Toy        *service.ToyService
-	ToyPrice   *service.ToyPriceService
-	Set        *service.SetService
-	User       *service.UserService
-	UserDevice *service.UserDeviceService
-	DB         *gorm.DB
+	Token        *service.TokenService
+	Toy          *service.ToyService
+	ToyPrice     *service.ToyPriceService
+	IP           *service.IPService
+	IPType       *service.IPTypeService
+	IPSeries     *service.IPSeriesService
+	IPSeriesItem *service.IPSeriesItemService
+	User         *service.UserService
+	UserDevice   *service.UserDeviceService
+	DB           *gorm.DB
 }
 
 func NewHandler(services *service.Services, db *gorm.DB) *Handler {
 	h := &Handler{
 
-		Token:      services.TokenService,
-		Toy:        services.ToyService,
-		ToyPrice:   services.ToyPriceService,
-		Set:        services.SetService,
-		User:       services.UserService,
-		UserDevice: services.UserDeviceService,
-		DB:         db,
+		Token:        services.TokenService,
+		Toy:          services.ToyService,
+		ToyPrice:     services.ToyPriceService,
+		IP:           services.IPService,
+		IPType:       services.IPTypeService,
+		IPSeries:     services.IPSeriesService,
+		IPSeriesItem: services.IPSeriesItemService,
+		User:         services.UserService,
+		UserDevice:   services.UserDeviceService,
+		DB:           db,
 	}
 
 	return h

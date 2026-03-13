@@ -23,7 +23,10 @@ func Migrate(db *gorm.DB) error {
 
 	// List of models
 	models := []any{
-		&model.Set{},
+		&model.IP{},
+		&model.IPType{},
+		&model.IPSeries{},
+		&model.IPSeriesItem{},
 		&model.Token{},
 		&model.ToyPrice{},
 		&model.Toy{},

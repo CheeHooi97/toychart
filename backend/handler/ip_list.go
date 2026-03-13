@@ -7,20 +7,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) IPTypeList(c echo.Context) error {
+func (h *Handler) IPList(c echo.Context) error {
 	var i struct {
+		IPTypeId string `json:"ipTypeId" validate:"required"`
 	}
 
 	if msg, err := utils.ValidateRequest(c, &i); err != nil {
 		return responseValidationError(c, msg)
 	}
 
-	ipTypeList, err := h.IPType.GetAllIPTypes()
+	ipList, err := h.IP.GetAllIPsByIPTypes(i.IPTypeId)
 	if err != nil {
 		return responseError(c, errcode.InternalServerError)
 	}
 
 	return responseJSON(c, echo.Map{
-		"lists": ipTypeList,
+		"lists": ipList,
 	})
 }

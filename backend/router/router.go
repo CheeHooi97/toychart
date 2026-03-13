@@ -72,10 +72,10 @@ func SetupRoutes(h *handler.Handler, db *gorm.DB) *echo.Echo {
 
 	set := e.Group("/set")
 	set.POST("/create", h.CreateSet)
-	set.GET("/list", h.SetList)
 
 	series := e.Group("/series")
-	series.GET("/list", h.SeriesList)
+	series.GET("/list", h.IPSeriesList)
+	series.GET("/item/list", h.IPSeriesItemList)
 
 	v := e.Group("/v1", appMiddleware.Authenticated(extractToken, h.VerifyToken))
 

@@ -7,21 +7,21 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) IPList(c echo.Context) error {
+func (h *Handler) IPSeriesItemList(c echo.Context) error {
 	var i struct {
-		Set string `json:"set" validate:"required"`
+		IPSeriesId string `json:"ipSeriesId" validate:"required"`
 	}
 
 	if msg, err := utils.ValidateRequest(c, &i); err != nil {
 		return responseValidationError(c, msg)
 	}
 
-	seriesList, err := h.Set.GetSeriesByIPName(i.Set)
+	ipItemsList, err := h.IPSeriesItem.GetByIPSeriesId(i.IPSeriesId)
 	if err != nil {
 		return responseError(c, errcode.InternalServerError)
 	}
 
 	return responseJSON(c, echo.Map{
-		"lists": seriesList,
+		"lists": ipItemsList,
 	})
 }
